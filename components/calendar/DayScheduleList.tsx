@@ -33,9 +33,9 @@ export function DayScheduleList({
   const colors = Colors[colorScheme];
 
   const sortedTreatments = [...treatments].sort((a, b) => {
-    if (!a.time) return 1;
-    if (!b.time) return -1;
-    return a.time.localeCompare(b.time);
+    if (!a.startTime) return 1;
+    if (!b.startTime) return -1;
+    return a.startTime.localeCompare(b.startTime);
   });
 
   return (

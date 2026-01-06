@@ -40,9 +40,10 @@ export function TreatmentItem({ treatment, onPress }: Props) {
 
       <View style={styles.content}>
         <View style={styles.header}>
-          {treatment.time && (
+          {treatment.startTime && (
             <ThemedText style={[styles.time, { color: colors.accent }]}>
-              {treatment.time}
+              {treatment.startTime}
+              {treatment.endTime && ` 〜 ${treatment.endTime}`}
             </ThemedText>
           )}
           <View

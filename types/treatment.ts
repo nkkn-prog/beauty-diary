@@ -13,7 +13,8 @@ export type Treatment = {
   id: string;
   title: string;
   date: string;          // ISO 8601 format: 'YYYY-MM-DD'
-  time?: string;         // 'HH:mm' format
+  startTime?: string;    // 'HH:mm' format
+  endTime?: string;      // 'HH:mm' format
   location?: string;
   category: TreatmentCategory;
   price?: number;        // Price in JPY
