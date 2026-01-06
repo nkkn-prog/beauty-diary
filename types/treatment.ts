@@ -1,11 +1,10 @@
-export type TreatmentCategory =
-  | 'facial'      // フェイシャル
-  | 'skin'        // 肌治療
-  | 'hair'        // 脱毛
-  | 'body'        // ボディ
-  | 'nail'        // ネイル
-  | 'eyebrow'     // 眉毛
-  | 'other';      // その他
+export type Category = {
+  id: string;
+  label: string;
+  color: string;
+  createdAt: string;
+  updatedAt: string;
+};
 
 export type TreatmentStatus = 'scheduled' | 'completed' | 'cancelled';
 
@@ -16,7 +15,7 @@ export type Treatment = {
   startTime?: string;    // 'HH:mm' format
   endTime?: string;      // 'HH:mm' format
   location?: string;
-  category: TreatmentCategory;
+  categoryId: string;    // Reference to Category.id
   price?: number;        // Price in JPY
   notes?: string;
   status: TreatmentStatus;
@@ -24,22 +23,41 @@ export type Treatment = {
   updatedAt: string;
 };
 
-export const CATEGORY_LABELS: Record<TreatmentCategory, string> = {
-  facial: 'フェイシャル',
-  skin: '肌治療',
-  hair: '脱毛',
-  body: 'ボディ',
-  nail: 'ネイル',
-  eyebrow: '眉毛',
-  other: 'その他',
-};
+export const COLOR_PALETTE = [
+  '#E8B4B8',  // Soft Pink
+  '#A8D5BA',  // Sage Green
+  '#B4C7E8',  // Soft Blue
+  '#E8D4B4',  // Warm Beige
+  '#D4B4E8',  // Lavender
+  '#C7B299',  // Taupe
+  '#F5D0C5',  // Peach
+  '#B8E0D2',  // Mint
+  '#E8C4D4',  // Rose
+  '#C4C4C4',  // Gray
+] as const;
 
-export const CATEGORY_COLORS: Record<TreatmentCategory, string> = {
-  facial: '#E8B4B8',   // Soft pink
-  skin: '#A8D5BA',     // Sage green
-  hair: '#B4C7E8',     // Soft blue
-  body: '#E8D4B4',     // Warm beige
-  nail: '#D4B4E8',     // Lavender
-  eyebrow: '#C7B299',  // Taupe
-  other: '#C4C4C4',    // Gray
-};
+export const MAX_CATEGORIES = 10;
+
+export const DEFAULT_CATEGORIES: Category[] = [
+  {
+    id: 'hair-removal',
+    label: '脱毛',
+    color: '#B4C7E8',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'peeling',
+    label: 'ピーリング',
+    color: '#A8D5BA',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'nail',
+    label: 'ネイル',
+    color: '#D4B4E8',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+];

@@ -9,7 +9,8 @@ import { ThemedView } from '@/components/themed-view';
 import { DayScheduleList } from '@/components/calendar';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Treatment, CATEGORY_COLORS } from '@/types/treatment';
+import { useCategories } from '@/hooks/use-categories';
+import { Treatment } from '@/types/treatment';
 
 // Japanese locale configuration
 LocaleConfig.locales['ja'] = {
@@ -27,16 +28,16 @@ LocaleConfig.locales['ja'] = {
 };
 LocaleConfig.defaultLocale = 'ja';
 
-// Mock data
+// Mock data - categoryId references categories from useCategories hook
 const MOCK_TREATMENTS: Treatment[] = [
   {
     id: '1',
-    title: 'ポテンツァ',
+    title: '医療脱毛（全身）',
     date: '2025-01-15',
     startTime: '14:00',
     endTime: '15:00',
     location: '渋谷美容クリニック',
-    category: 'skin',
+    categoryId: 'hair-removal',
     price: 55000,
     status: 'scheduled',
     createdAt: '2025-01-01T00:00:00Z',
@@ -44,12 +45,12 @@ const MOCK_TREATMENTS: Treatment[] = [
   },
   {
     id: '2',
-    title: '医療脱毛（全身）',
+    title: 'ピーリング施術',
     date: '2025-01-20',
     startTime: '11:00',
     endTime: '12:30',
-    location: '銀座レーザークリニック',
-    category: 'hair',
+    location: '銀座美容クリニック',
+    categoryId: 'peeling',
     price: 120000,
     status: 'scheduled',
     createdAt: '2025-01-01T00:00:00Z',
@@ -57,25 +58,13 @@ const MOCK_TREATMENTS: Treatment[] = [
   },
   {
     id: '3',
-    title: '眉毛サロン',
+    title: 'ジェルネイル',
     date: '2025-01-15',
     startTime: '16:30',
     endTime: '17:00',
-    location: '表参道サロン',
-    category: 'eyebrow',
+    location: '表参道ネイルサロン',
+    categoryId: 'nail',
     price: 6500,
-    status: 'scheduled',
-    createdAt: '2025-01-01T00:00:00Z',
-    updatedAt: '2025-01-01T00:00:00Z',
-  },
-  {
-    id: '4',
-    title: 'フェイシャルエステ',
-    date: '2025-01-28',
-    startTime: '13:00',
-    endTime: '14:00',
-    category: 'facial',
-    price: 15000,
     status: 'scheduled',
     createdAt: '2025-01-01T00:00:00Z',
     updatedAt: '2025-01-01T00:00:00Z',
@@ -92,21 +81,23 @@ export default function CalendarScreen() {
   const colors = Colors[colorScheme];
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { getCategoryById } = useCategories();
 
   const [selectedDate, setSelectedDate] = useState(getToday());
   const [treatments] = useState<Treatment[]>(MOCK_TREATMENTS);
 
   // Group treatments by date for calendar markers
   const markedDates = useMemo(() => {
-    const marks: Record<string, { dots: Array<{ key: string; color: string }>; selected?: boolean; selectedColor?: string }> = {};
+    const marks: Record<string, { dots: { key: string; color: string }[]; selected?: boolean; selectedColor?: string }> = {};
 
     treatments.forEach((t) => {
       if (!marks[t.date]) {
         marks[t.date] = { dots: [] };
       }
+      const category = getCategoryById(t.categoryId);
       marks[t.date].dots.push({
         key: t.id,
-        color: CATEGORY_COLORS[t.category],
+        color: category?.color || '#C4C4C4',
       });
     });
 
@@ -126,7 +117,7 @@ export default function CalendarScreen() {
     }
 
     return marks;
-  }, [treatments, selectedDate, colors.accent]);
+  }, [treatments, selectedDate, colors.accent, getCategoryById]);
 
   // Get treatments for selected date
   const selectedDateTreatments = useMemo(() => {

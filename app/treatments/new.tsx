@@ -8,9 +8,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   Modal,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams, Stack } from 'expo-router';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 
@@ -18,21 +18,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import {
-  TreatmentCategory,
-  CATEGORY_LABELS,
-  CATEGORY_COLORS,
-} from '@/types/treatment';
-
-const CATEGORIES: TreatmentCategory[] = [
-  'facial',
-  'skin',
-  'hair',
-  'body',
-  'eyebrow',
-  'nail',
-  'other',
-];
+import { useCategories } from '@/hooks/use-categories';
 
 function formatDateForDisplay(dateString: string): string {
   const date = new Date(dateString);
@@ -47,12 +33,12 @@ function formatDateForDisplay(dateString: string): string {
 export default function NewTreatmentScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
-  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { date } = useLocalSearchParams<{ date: string }>();
+  const { categories, loading: categoriesLoading } = useCategories();
 
   const [title, setTitle] = useState('');
-  const [selectedDate, setSelectedDate] = useState(date || new Date().toISOString().split('T')[0]);
+  const [selectedDate] = useState(date || new Date().toISOString().split('T')[0]);
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [endTime, setEndTime] = useState<Date | null>(null);
   const [showStartPicker, setShowStartPicker] = useState(false);
@@ -61,7 +47,7 @@ export default function NewTreatmentScreen() {
   const [isManualInput, setIsManualInput] = useState(false);
   const [manualTimeText, setManualTimeText] = useState('');
   const [location, setLocation] = useState('');
-  const [category, setCategory] = useState<TreatmentCategory>('skin');
+  const [categoryId, setCategoryId] = useState<string>('');
   const [price, setPrice] = useState('');
   const [notes, setNotes] = useState('');
 
@@ -251,7 +237,7 @@ export default function NewTreatmentScreen() {
       startTime: formatTimeForSave(startTime),
       endTime: formatTimeForSave(endTime),
       location: location.trim() || undefined,
-      category,
+      categoryId: categoryId || categories[0]?.id,
       price: price ? parseInt(price, 10) : undefined,
       notes: notes.trim() || undefined,
       status: 'scheduled' as const,
@@ -426,47 +412,51 @@ export default function NewTreatmentScreen() {
               <ThemedText style={[styles.label, { color: colors.textSecondary }]}>
                 カテゴリ
               </ThemedText>
-              <View style={styles.categoryGrid}>
-                {CATEGORIES.map((cat) => (
-                  <Pressable
-                    key={cat}
-                    style={[
-                      styles.categoryButton,
-                      {
-                        backgroundColor:
-                          category === cat
-                            ? `${CATEGORY_COLORS[cat]}30`
-                            : colors.surface,
-                        borderColor:
-                          category === cat
-                            ? CATEGORY_COLORS[cat]
-                            : colors.border,
-                      },
-                    ]}
-                    onPress={() => setCategory(cat)}
-                  >
-                    <View
-                      style={[
-                        styles.categoryDot,
-                        { backgroundColor: CATEGORY_COLORS[cat] },
-                      ]}
-                    />
-                    <ThemedText
-                      style={[
-                        styles.categoryText,
-                        {
-                          color:
-                            category === cat
-                              ? CATEGORY_COLORS[cat]
-                              : colors.text,
-                        },
-                      ]}
-                    >
-                      {CATEGORY_LABELS[cat]}
-                    </ThemedText>
-                  </Pressable>
-                ))}
-              </View>
+              {categoriesLoading ? (
+                <ActivityIndicator size="small" color={colors.accent} />
+              ) : (
+                <View style={styles.categoryGrid}>
+                  {categories.map((cat) => {
+                    const isSelected = categoryId === cat.id || (!categoryId && categories[0]?.id === cat.id);
+                    return (
+                      <Pressable
+                        key={cat.id}
+                        style={[
+                          styles.categoryButton,
+                          {
+                            backgroundColor: isSelected
+                              ? `${cat.color}30`
+                              : colors.surface,
+                            borderColor: isSelected
+                              ? cat.color
+                              : colors.border,
+                          },
+                        ]}
+                        onPress={() => setCategoryId(cat.id)}
+                      >
+                        <View
+                          style={[
+                            styles.categoryDot,
+                            { backgroundColor: cat.color },
+                          ]}
+                        />
+                        <ThemedText
+                          style={[
+                            styles.categoryText,
+                            {
+                              color: isSelected
+                                ? cat.color
+                                : colors.text,
+                            },
+                          ]}
+                        >
+                          {cat.label}
+                        </ThemedText>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              )}
             </View>
 
             {/* Location Input */}

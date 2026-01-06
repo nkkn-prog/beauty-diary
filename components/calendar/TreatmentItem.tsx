@@ -4,11 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/themed-text';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import {
-  Treatment,
-  CATEGORY_LABELS,
-  CATEGORY_COLORS,
-} from '@/types/treatment';
+import { useCategories } from '@/hooks/use-categories';
+import { Treatment } from '@/types/treatment';
 
 type Props = {
   treatment: Treatment;
@@ -18,7 +15,10 @@ type Props = {
 export function TreatmentItem({ treatment, onPress }: Props) {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
-  const categoryColor = CATEGORY_COLORS[treatment.category];
+  const { getCategoryById } = useCategories();
+  const category = getCategoryById(treatment.categoryId);
+  const categoryColor = category?.color || '#C4C4C4';
+  const categoryLabel = category?.label || 'その他';
 
   return (
     <Pressable
@@ -53,7 +53,7 @@ export function TreatmentItem({ treatment, onPress }: Props) {
             ]}
           >
             <ThemedText style={[styles.categoryText, { color: categoryColor }]}>
-              {CATEGORY_LABELS[treatment.category]}
+              {categoryLabel}
             </ThemedText>
           </View>
         </View>
