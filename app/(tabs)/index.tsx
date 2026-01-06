@@ -30,21 +30,21 @@ const TREATMENTS: Treatment[] = [
   {
     id: '1',
     name: '眉毛サロン',
-    date: new Date('2024-12-28'),
-    status: 'completed',
+    date: new Date('2025-01-10'),
+    status: 'scheduled',
     category: 'フェイス',
   },
   {
     id: '2',
     name: 'ポテンツァ',
-    date: new Date('2025-01-15'),
+    date: new Date('2025-01-20'),
     status: 'scheduled',
     category: '肌治療',
   },
   {
     id: '3',
     name: '医療脱毛',
-    date: new Date('2025-01-20'),
+    date: new Date('2025-02-05'),
     status: 'scheduled',
     category: 'ボディ',
   },
@@ -186,16 +186,28 @@ export default function HomeScreen() {
             actionLabel="すべて見る"
             onAction={() => router.push('/treatments/list')}
           />
-          {TREATMENTS
-            .filter((treatment) => {
-              const today = new Date();
-              today.setHours(0, 0, 0, 0);
-              return treatment.date >= today;
-            })
-            .slice(0, 5)
-            .map((treatment) => (
+          {(() => {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const upcomingTreatments = TREATMENTS
+              .filter((treatment) => treatment.date >= today)
+              .slice(0, 5);
+
+            if (upcomingTreatments.length === 0) {
+              return (
+                <View style={[styles.emptyTimeline, { backgroundColor: colors.surface }]}>
+                  <Ionicons name="calendar-outline" size={32} color={colors.textSecondary} />
+                  <ThemedText style={[styles.emptyTimelineText, { color: colors.textSecondary }]}>
+                    施術予定はありません
+                  </ThemedText>
+                </View>
+              );
+            }
+
+            return upcomingTreatments.map((treatment) => (
               <TreatmentCard key={treatment.id} treatment={treatment} />
-            ))}
+            ));
+          })()}
         </View>
 
         {/* Before/After Section */}
@@ -277,6 +289,16 @@ const styles = StyleSheet.create({
   section: {
     marginTop: 8,
     marginBottom: 8,
+  },
+  emptyTimeline: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 32,
+    borderRadius: 12,
+    gap: 8,
+  },
+  emptyTimelineText: {
+    fontSize: 14,
   },
   supplementList: {
     paddingRight: 20,
