@@ -88,7 +88,7 @@ export default function CalendarScreen() {
 
   // Group treatments by date for calendar markers
   const markedDates = useMemo(() => {
-    const marks: Record<string, { dots: { key: string; color: string }[]; selected?: boolean; selectedColor?: string }> = {};
+    const marks: Record<string, { dots: Array<{ key: string; color: string }>; selected?: boolean; selectedColor?: string }> = {};
 
     treatments.forEach((t) => {
       if (!marks[t.date]) {

@@ -40,6 +40,10 @@ export default function ProfileScreen() {
     router.push('/settings/categories');
   };
 
+  const handleSupplementsPress = () => {
+    router.push('/settings/supplements');
+  };
+
   return (
     <ThemedView style={[styles.container, { paddingTop: insets.top + 16 }]}>
       <View style={styles.header}>
@@ -59,6 +63,13 @@ export default function ProfileScreen() {
             icon="pricetag-outline"
             label="カテゴリ管理"
             onPress={handleCategoriesPress}
+            colors={colors}
+          />
+          <View style={{ height: 8 }} />
+          <MenuItem
+            icon="medical-outline"
+            label="サプリメント管理"
+            onPress={handleSupplementsPress}
             colors={colors}
           />
         </View>

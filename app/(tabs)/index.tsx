@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -19,20 +20,11 @@ import {
   SectionHeader,
   EmptySupplementCard,
   SupplementAddButton,
-  type Supplement,
   type Treatment,
 } from '@/components/home';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-
-// Mock data - 空配列でテスト可能
-const INITIAL_SUPPLEMENTS: Supplement[] = [
-  // { id: '1', name: 'ビタミンC', emoji: '🍊', checked: false },
-  // { id: '2', name: '鉄分', emoji: '💪', checked: false },
-  // { id: '3', name: '亜鉛', emoji: '✨', checked: false },
-  // { id: '4', name: 'ビタミンD', emoji: '☀️', checked: false },
-  // { id: '5', name: 'コラーゲン', emoji: '💎', checked: false },
-];
+import { useSupplements } from '@/hooks/use-supplements';
 
 const TREATMENTS: Treatment[] = [
   {
@@ -79,18 +71,11 @@ export default function HomeScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const insets = useSafeAreaInsets();
+  const router = useRouter();
 
-  const [supplements, setSupplements] = useState(INITIAL_SUPPLEMENTS);
+  const { supplements } = useSupplements();
   const [skinCondition, setSkinCondition] = useState<ConditionLevel | undefined>();
   const [bodyCondition, setBodyCondition] = useState<ConditionLevel | undefined>();
-
-  const checkedCount = supplements.filter((s) => s.checked).length;
-
-  const handleToggleSupplement = useCallback((id: string) => {
-    setSupplements((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, checked: !s.checked } : s))
-    );
-  }, []);
 
   const handleOpenConditionDetail = () => {
     // Navigate to condition detail screen
@@ -108,8 +93,7 @@ export default function HomeScreen() {
   };
 
   const handleAddSupplement = () => {
-    // Navigate to supplement registration screen
-    console.log('ここを押すとサプリ登録画面が出るのが好ましい');
+    router.push('/settings/supplements');
   };
 
   return (
@@ -172,9 +156,8 @@ export default function HomeScreen() {
           <SectionHeader
             icon="medical-outline"
             title="サプリメント一覧"
-            subtitle={supplements.length > 0 ? `${checkedCount}/${supplements.length}` : undefined}
             actionLabel={supplements.length > 0 ? '編集' : undefined}
-            onAction={supplements.length > 0 ? () => console.log('Edit supplements') : undefined}
+            onAction={supplements.length > 0 ? handleAddSupplement : undefined}
           />
           {supplements.length > 0 ? (
             <FlatList
@@ -184,10 +167,7 @@ export default function HomeScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.supplementList}
               renderItem={({ item }) => (
-                <SupplementCheckItem
-                  supplement={item}
-                  onToggle={handleToggleSupplement}
-                />
+                <SupplementCheckItem supplement={item} />
               )}
               ListFooterComponent={
                 <SupplementAddButton onPress={handleAddSupplement} />
@@ -225,7 +205,7 @@ export default function HomeScreen() {
       </ScrollView>
 
       {/* Floating Action Button */}
-      <Pressable
+      {/* <Pressable
         style={[
           styles.fab,
           {
@@ -236,7 +216,7 @@ export default function HomeScreen() {
         onPress={handleAddTreatment}
       >
         <Ionicons name="add" size={28} color="#fff" />
-      </Pressable>
+      </Pressable> */}
     </ThemedView>
   );
 }

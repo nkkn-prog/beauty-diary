@@ -59,9 +59,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderStyle: 'dashed',
     minWidth: 80,
+    height: 80,
     marginRight: 10,
-    // SupplementCheckItemと同じ高さにするため
-    // checkbox(20) + marginBottom(8) + emoji(24) + marginBottom(4) + name(~14) = 約70
-    minHeight: 94,
   },
 });

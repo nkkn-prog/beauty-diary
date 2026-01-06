@@ -1,4 +1,5 @@
-export { SupplementCheckItem, type Supplement } from './SupplementCheckItem';
+export { SupplementCheckItem } from './SupplementCheckItem';
+export type { Supplement } from '@/types/treatment';
 export { TreatmentCard, type Treatment } from './TreatmentCard';
 export { ConditionInput } from './ConditionInput';
 export { BeforeAfterCard } from './BeforeAfterCard';

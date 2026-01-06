@@ -38,6 +38,23 @@ export const COLOR_PALETTE = [
 
 export const MAX_CATEGORIES = 10;
 
+// Supplement types
+export type Supplement = {
+  id: string;
+  name: string;
+  emoji: string;
+  url?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export const MAX_SUPPLEMENTS = 10;
+
+export const EMOJI_PALETTE = [
+  '💊', '🍊', '💪', '✨', '☀️', '💎', '🌿', '🐟', '🦴', '🩸',
+  '🧬', '🥛', '🍇', '🫀', '🧠', '👁️', '💅', '🦷', '🍃', '🌸',
+] as const;
+
 export const DEFAULT_CATEGORIES: Category[] = [
   {
     id: 'hair-removal',
