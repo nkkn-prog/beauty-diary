@@ -184,11 +184,18 @@ export default function HomeScreen() {
             icon="calendar-outline"
             title="施術タイムライン"
             actionLabel="すべて見る"
-            onAction={() => console.log('View all treatments')}
+            onAction={() => router.push('/treatments/list')}
           />
-          {TREATMENTS.map((treatment) => (
-            <TreatmentCard key={treatment.id} treatment={treatment} />
-          ))}
+          {TREATMENTS
+            .filter((treatment) => {
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              return treatment.date >= today;
+            })
+            .slice(0, 5)
+            .map((treatment) => (
+              <TreatmentCard key={treatment.id} treatment={treatment} />
+            ))}
         </View>
 
         {/* Before/After Section */}

@@ -11,6 +11,7 @@ export type Treatment = {
   date: Date;
   status: 'completed' | 'scheduled';
   category?: string;
+  place?: string;
 };
 
 type Props = {
