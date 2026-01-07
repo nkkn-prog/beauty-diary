@@ -60,7 +60,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="stats"
         options={{
-          title: '変化',
+          title: '記録',
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? 'bar-chart' : 'bar-chart-outline'}

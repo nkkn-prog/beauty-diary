@@ -23,6 +23,15 @@ export type Treatment = {
   updatedAt: string;
 };
 
+// Daily note type
+export type DailyNote = {
+  id: string;
+  date: string;          // 'YYYY-MM-DD' format
+  memo: string;          // Free text memo
+  createdAt: string;
+  updatedAt: string;
+};
+
 export const COLOR_PALETTE = [
   '#E8B4B8',  // Soft Pink
   '#A8D5BA',  // Sage Green

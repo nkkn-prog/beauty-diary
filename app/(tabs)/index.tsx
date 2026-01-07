@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -7,48 +7,28 @@ import {
   FlatList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter, useFocusEffect } from 'expo-router';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import {
   SupplementCheckItem,
   TreatmentCard,
-  ConditionInput,
+  DailyNoteInput,
   BeforeAfterCard,
   SectionHeader,
   EmptySupplementCard,
   SupplementAddButton,
-  type Treatment,
 } from '@/components/home';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useSupplements } from '@/hooks/use-supplements';
+import { useTreatments } from '@/hooks/use-treatments';
+import { useCategories } from '@/hooks/use-categories';
+import { useDailyNotes } from '@/hooks/use-daily-notes';
 
-const TREATMENTS: Treatment[] = [
-  {
-    id: '1',
-    name: '眉毛サロン',
-    date: new Date('2025-01-10'),
-    status: 'scheduled',
-    category: 'フェイス',
-  },
-  {
-    id: '2',
-    name: 'ポテンツァ',
-    date: new Date('2025-01-20'),
-    status: 'scheduled',
-    category: '肌治療',
-  },
-  {
-    id: '3',
-    name: '医療脱毛',
-    date: new Date('2025-02-05'),
-    status: 'scheduled',
-    category: 'ボディ',
-  },
-];
+const REFRESH_THROTTLE_MS = 5000; // 5秒間隔でリフレッシュ
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -65,31 +45,52 @@ function formatDate(date: Date): string {
   return `${month}月${day}日 ${weekday}曜日`;
 }
 
-type ConditionLevel = 1 | 2 | 3 | 4 | 5;
+function getToday(): string {
+  return new Date().toISOString().split('T')[0];
+}
 
 export default function HomeScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
-  const insets = useSafeAreaInsets();
   const router = useRouter();
 
-  const { supplements } = useSupplements();
-  const [skinCondition, setSkinCondition] = useState<ConditionLevel | undefined>();
-  const [bodyCondition, setBodyCondition] = useState<ConditionLevel | undefined>();
+  const { supplements, refresh: refreshSupplements } = useSupplements();
+  const { refresh: refreshTreatments, getUpcoming } = useTreatments();
+  const { getCategoryById } = useCategories();
+  const { getByDate, save: saveDailyNote, refresh: refreshDailyNotes } = useDailyNotes();
+  const [savingNote, setSavingNote] = useState(false);
+  const lastRefreshTime = useRef<number>(0);
 
-  const handleOpenConditionDetail = () => {
-    // Navigate to condition detail screen
-    console.log('Open condition detail');
+  const today = getToday();
+  const todayNote = getByDate(today);
+
+  useFocusEffect(
+    useCallback(() => {
+      const now = Date.now();
+      if (now - lastRefreshTime.current < REFRESH_THROTTLE_MS) {
+        return;
+      }
+      lastRefreshTime.current = now;
+      refreshTreatments();
+      refreshSupplements();
+      refreshDailyNotes();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+  );
+
+  const handleSaveDailyNote = async (memo: string) => {
+    setSavingNote(true);
+    try {
+      await saveDailyNote(today, memo);
+    } finally {
+      setSavingNote(false);
+    }
   };
+
+  const upcomingTreatments = getUpcoming(5);
 
   const handleOpenBeforeAfter = () => {
-    // Navigate to before/after screen
     console.log('Open before/after');
-  };
-
-  const handleAddTreatment = () => {
-    // Navigate to add treatment screen
-    console.log('Add treatment');
   };
 
   const handleAddSupplement = () => {
@@ -97,13 +98,11 @@ export default function HomeScreen() {
   };
 
   return (
-    <ThemedView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+      <View style={{ height: 20 }} />
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={[
-          styles.content,
-          { paddingTop: insets.top + 16 },
-        ]}
+        contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
@@ -142,13 +141,12 @@ export default function HomeScreen() {
           </ThemedText>
         </View>
 
-        {/* Condition Input */}
-        <ConditionInput
-          skinCondition={skinCondition}
-          bodyCondition={bodyCondition}
-          onSkinChange={setSkinCondition}
-          onBodyChange={setBodyCondition}
-          onOpenDetail={handleOpenConditionDetail}
+        {/* Daily Note Input */}
+        <DailyNoteInput
+          date={today}
+          initialMemo={todayNote?.memo}
+          onSave={handleSaveDailyNote}
+          saving={savingNote}
         />
 
         {/* Supplements Section */}
@@ -182,40 +180,38 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <SectionHeader
             icon="calendar-outline"
-            title="施術タイムライン"
+            title="スケジュール"
             actionLabel="すべて見る"
             onAction={() => router.push('/treatments/list')}
           />
-          {(() => {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            const upcomingTreatments = TREATMENTS
-              .filter((treatment) => treatment.date >= today)
-              .slice(0, 5);
-
-            if (upcomingTreatments.length === 0) {
+          {upcomingTreatments.length === 0 ? (
+            <View style={[styles.emptyTimeline, { backgroundColor: colors.surface }]}>
+              <Ionicons name="calendar-outline" size={32} color={colors.textSecondary} />
+              <ThemedText style={[styles.emptyTimelineText, { color: colors.textSecondary }]}>
+                施術予定はありません
+              </ThemedText>
+            </View>
+          ) : (
+            upcomingTreatments.map((treatment) => {
+              const category = getCategoryById(treatment.categoryId);
               return (
-                <View style={[styles.emptyTimeline, { backgroundColor: colors.surface }]}>
-                  <Ionicons name="calendar-outline" size={32} color={colors.textSecondary} />
-                  <ThemedText style={[styles.emptyTimelineText, { color: colors.textSecondary }]}>
-                    施術予定はありません
-                  </ThemedText>
-                </View>
+                <TreatmentCard
+                  key={treatment.id}
+                  treatment={treatment}
+                  categoryLabel={category?.label}
+                  categoryColor={category?.color}
+                />
               );
-            }
-
-            return upcomingTreatments.map((treatment) => (
-              <TreatmentCard key={treatment.id} treatment={treatment} />
-            ));
-          })()}
+            })
+          )}
         </View>
 
         {/* Before/After Section */}
         <View style={styles.section}>
           <SectionHeader icon="images-outline" title="記録" />
           <BeforeAfterCard
-            latestComparisonDate={new Date('2024-12-20')}
             onPress={handleOpenBeforeAfter}
+            comingSoon
           />
         </View>
 
@@ -236,7 +232,7 @@ export default function HomeScreen() {
       >
         <Ionicons name="add" size={28} color="#fff" />
       </Pressable> */}
-    </ThemedView>
+    </SafeAreaView>
   );
 }
 
@@ -249,6 +245,7 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 20,
+    paddingTop: 16,
   },
   header: {
     flexDirection: 'row',

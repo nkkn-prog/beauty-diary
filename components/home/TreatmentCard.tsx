@@ -4,36 +4,31 @@ import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/themed-text';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-
-export type Treatment = {
-  id: string;
-  name: string;
-  date: Date;
-  status: 'completed' | 'scheduled';
-  category?: string;
-  place?: string;
-};
+import { Treatment } from '@/types/treatment';
 
 type Props = {
   treatment: Treatment;
+  categoryLabel?: string;
+  categoryColor?: string;
 };
 
-function formatDate(date: Date): string {
+function formatDate(dateString: string): string {
+  const date = new Date(dateString);
   const month = date.getMonth() + 1;
   const day = date.getDate();
   return `${month}/${day}`;
 }
 
-function getDaysUntil(date: Date): number {
+function getDaysUntil(dateString: string): number {
   const now = new Date();
   now.setHours(0, 0, 0, 0);
-  const target = new Date(date);
+  const target = new Date(dateString);
   target.setHours(0, 0, 0, 0);
   const diff = target.getTime() - now.getTime();
   return Math.ceil(diff / (1000 * 60 * 60 * 24));
 }
 
-export function TreatmentCard({ treatment }: Props) {
+export function TreatmentCard({ treatment, categoryLabel, categoryColor }: Props) {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const isCompleted = treatment.status === 'completed';
@@ -79,24 +74,33 @@ export function TreatmentCard({ treatment }: Props) {
             style={[styles.date, { color: colors.textSecondary }]}
           >
             {formatDate(treatment.date)}
+            {treatment.startTime && ` ${treatment.startTime}`}
           </ThemedText>
-          {treatment.category && (
+          {categoryLabel && (
             <View
               style={[
                 styles.categoryBadge,
-                { backgroundColor: colors.accentLight },
+                { backgroundColor: categoryColor ? `${categoryColor}30` : colors.accentLight },
               ]}
             >
               <ThemedText
-                style={[styles.categoryText, { color: colors.accent }]}
+                style={[styles.categoryText, { color: categoryColor || colors.accent }]}
               >
-                {treatment.category}
+                {categoryLabel}
               </ThemedText>
             </View>
           )}
         </View>
 
-        <ThemedText style={styles.name}>{treatment.name}</ThemedText>
+        <ThemedText style={styles.name}>{treatment.title}</ThemedText>
+
+        {treatment.location && (
+          <ThemedText
+            style={[styles.location, { color: colors.textSecondary }]}
+          >
+            {treatment.location}
+          </ThemedText>
+        )}
 
         <ThemedText
           style={[
@@ -106,7 +110,7 @@ export function TreatmentCard({ treatment }: Props) {
             },
           ]}
         >
-          {isCompleted ? '完了' : `あと${daysUntil}日`}
+          {isCompleted ? '完了' : daysUntil === 0 ? '今日' : daysUntil > 0 ? `あと${daysUntil}日` : `${Math.abs(daysUntil)}日前`}
         </ThemedText>
       </View>
     </View>
@@ -170,6 +174,10 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 16,
     fontWeight: '600',
+    marginBottom: 4,
+  },
+  location: {
+    fontSize: 12,
     marginBottom: 4,
   },
   status: {

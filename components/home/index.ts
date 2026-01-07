@@ -1,7 +1,7 @@
 export { SupplementCheckItem } from './SupplementCheckItem';
-export type { Supplement } from '@/types/treatment';
-export { TreatmentCard, type Treatment } from './TreatmentCard';
-export { ConditionInput } from './ConditionInput';
+export type { Supplement, Treatment } from '@/types/treatment';
+export { TreatmentCard } from './TreatmentCard';
+export { DailyNoteInput } from './DailyNoteInput';
 export { BeforeAfterCard } from './BeforeAfterCard';
 export { SectionHeader } from './SectionHeader';
 export { EmptySupplementCard } from './EmptySupplementCard';

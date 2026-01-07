@@ -4,18 +4,17 @@ import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/themed-text';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { useCategories } from '@/hooks/use-categories';
-import { Treatment } from '@/types/treatment';
+import { Category, Treatment } from '@/types/treatment';
 
 type Props = {
   treatment: Treatment;
   onPress: (treatment: Treatment) => void;
+  getCategoryById: (id: string) => Category | undefined;
 };
 
-export function TreatmentItem({ treatment, onPress }: Props) {
+export function TreatmentItem({ treatment, onPress, getCategoryById }: Props) {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
-  const { getCategoryById } = useCategories();
   const category = getCategoryById(treatment.categoryId);
   const categoryColor = category?.color || '#C4C4C4';
   const categoryLabel = category?.label || 'その他';

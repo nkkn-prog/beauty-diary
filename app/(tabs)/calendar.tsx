@@ -1,8 +1,8 @@
-import { useState, useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useState, useMemo, useCallback } from 'react';
+import { StyleSheet, View, Alert } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter, useFocusEffect } from 'expo-router';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -10,6 +10,8 @@ import { DayScheduleList } from '@/components/calendar';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useCategories } from '@/hooks/use-categories';
+import { useTreatments } from '@/hooks/use-treatments';
+import { useDailyNotes } from '@/hooks/use-daily-notes';
 import { Treatment } from '@/types/treatment';
 
 // Japanese locale configuration
@@ -28,49 +30,6 @@ LocaleConfig.locales['ja'] = {
 };
 LocaleConfig.defaultLocale = 'ja';
 
-// Mock data - categoryId references categories from useCategories hook
-const MOCK_TREATMENTS: Treatment[] = [
-  {
-    id: '1',
-    title: '医療脱毛（全身）',
-    date: '2025-01-15',
-    startTime: '14:00',
-    endTime: '15:00',
-    location: '渋谷美容クリニック',
-    categoryId: 'hair-removal',
-    price: 55000,
-    status: 'scheduled',
-    createdAt: '2025-01-01T00:00:00Z',
-    updatedAt: '2025-01-01T00:00:00Z',
-  },
-  {
-    id: '2',
-    title: 'ピーリング施術',
-    date: '2025-01-20',
-    startTime: '11:00',
-    endTime: '12:30',
-    location: '銀座美容クリニック',
-    categoryId: 'peeling',
-    price: 120000,
-    status: 'scheduled',
-    createdAt: '2025-01-01T00:00:00Z',
-    updatedAt: '2025-01-01T00:00:00Z',
-  },
-  {
-    id: '3',
-    title: 'ジェルネイル',
-    date: '2025-01-15',
-    startTime: '16:30',
-    endTime: '17:00',
-    location: '表参道ネイルサロン',
-    categoryId: 'nail',
-    price: 6500,
-    status: 'scheduled',
-    createdAt: '2025-01-01T00:00:00Z',
-    updatedAt: '2025-01-01T00:00:00Z',
-  },
-];
-
 function getToday(): string {
   const today = new Date();
   return today.toISOString().split('T')[0];
@@ -79,16 +38,26 @@ function getToday(): string {
 export default function CalendarScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
-  const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { getCategoryById } = useCategories();
+  const { categories, getCategoryById } = useCategories();
+  const { treatments, refresh: refreshTreatments } = useTreatments();
+  const { getByDate, refresh: refreshDailyNotes } = useDailyNotes();
 
   const [selectedDate, setSelectedDate] = useState(getToday());
-  const [treatments] = useState<Treatment[]>(MOCK_TREATMENTS);
+
+  const selectedDateNote = getByDate(selectedDate);
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshTreatments();
+      refreshDailyNotes();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+  );
 
   // Group treatments by date for calendar markers
   const markedDates = useMemo(() => {
-    const marks: Record<string, { dots: Array<{ key: string; color: string }>; selected?: boolean; selectedColor?: string }> = {};
+    const marks: Record<string, { dots: { key: string; color: string }[]; selected?: boolean; selectedColor?: string }> = {};
 
     treatments.forEach((t) => {
       if (!marks[t.date]) {
@@ -129,11 +98,24 @@ export default function CalendarScreen() {
   };
 
   const handleTreatmentPress = (treatment: Treatment) => {
-    console.log('Treatment pressed:', treatment.id);
-    // TODO: Navigate to treatment detail
+    router.push(`/treatments/${treatment.id}`);
   };
 
   const handleAddPress = () => {
+    if (categories.length === 0) {
+      Alert.alert(
+        'カテゴリがありません',
+        '施術予定を追加するにはカテゴリが必要です。マイページからカテゴリを追加してください。',
+        [
+          { text: 'キャンセル', style: 'cancel' },
+          {
+            text: 'マイページへ',
+            onPress: () => router.push('/(tabs)/profile'),
+          },
+        ]
+      );
+      return;
+    }
     router.push({
       pathname: '/treatments/new',
       params: { date: selectedDate },
@@ -162,7 +144,8 @@ export default function CalendarScreen() {
   };
 
   return (
-    <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+      <View style={{ height: 20 }} />
       <View style={styles.header}>
         <ThemedText style={styles.title}>カレンダー</ThemedText>
       </View>
@@ -190,8 +173,10 @@ export default function CalendarScreen() {
         treatments={selectedDateTreatments}
         onTreatmentPress={handleTreatmentPress}
         onAddPress={handleAddPress}
+        getCategoryById={getCategoryById}
+        dailyNoteMemo={selectedDateNote?.memo}
       />
-    </ThemedView>
+    </SafeAreaView>
   );
 }
 
@@ -204,7 +189,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '700',
   },
   calendar: {

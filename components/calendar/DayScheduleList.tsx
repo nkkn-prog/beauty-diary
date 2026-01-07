@@ -1,10 +1,10 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '@/components/themed-text';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Treatment } from '@/types/treatment';
+import { Category, Treatment } from '@/types/treatment';
 import { TreatmentItem } from './TreatmentItem';
 
 type Props = {
@@ -12,6 +12,8 @@ type Props = {
   treatments: Treatment[];
   onTreatmentPress: (treatment: Treatment) => void;
   onAddPress: () => void;
+  getCategoryById: (id: string) => Category | undefined;
+  dailyNoteMemo?: string;
 };
 
 function formatDateHeader(dateString: string): string {
@@ -28,6 +30,8 @@ export function DayScheduleList({
   treatments,
   onTreatmentPress,
   onAddPress,
+  getCategoryById,
+  dailyNoteMemo,
 }: Props) {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
@@ -39,7 +43,7 @@ export function DayScheduleList({
   });
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
       <View style={styles.header}>
         <ThemedText style={styles.dateTitle}>
           {formatDateHeader(selectedDate)}の予定
@@ -55,6 +59,7 @@ export function DayScheduleList({
             key={treatment.id}
             treatment={treatment}
             onPress={onTreatmentPress}
+            getCategoryById={getCategoryById}
           />
         ))}
 
@@ -69,6 +74,20 @@ export function DayScheduleList({
         )}
       </View>
 
+      {dailyNoteMemo && (
+        <View style={[styles.noteSection, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View style={styles.noteTitleRow}>
+            <Ionicons name="sparkles-outline" size={16} color={colors.accent} />
+            <ThemedText style={[styles.noteTitle, { color: colors.accent }]}>
+              この日の自分磨き
+            </ThemedText>
+          </View>
+          <ThemedText style={[styles.noteText, { color: colors.text }]}>
+            {dailyNoteMemo}
+          </ThemedText>
+        </View>
+      )}
+
       <Pressable
         style={[
           styles.addButton,
@@ -81,15 +100,18 @@ export function DayScheduleList({
           施術予定を追加
         </ThemedText>
       </Pressable>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  contentContainer: {
     paddingHorizontal: 20,
     paddingTop: 16,
+    paddingBottom: 16,
   },
   header: {
     flexDirection: 'row',
@@ -105,7 +127,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   list: {
-    flex: 1,
+    flexGrow: 1,
   },
   emptyState: {
     paddingVertical: 32,
@@ -114,6 +136,26 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 14,
   },
+  noteSection: {
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 12,
+  },
+  noteTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: 6,
+  },
+  noteTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  noteText: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -121,7 +163,6 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 12,
     marginTop: 8,
-    marginBottom: 16,
   },
   addButtonText: {
     fontSize: 15,

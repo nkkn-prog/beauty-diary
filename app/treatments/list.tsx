@@ -1,88 +1,22 @@
-import { useState, useMemo } from 'react';
-import { FlatList, StyleSheet, View, Pressable, TextInput, ScrollView } from 'react-native';
+import { useState, useMemo, useCallback } from 'react';
+import { FlatList, StyleSheet, View, Pressable, TextInput, ScrollView, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Stack } from 'expo-router';
+import { Stack, useFocusEffect, useRouter } from 'expo-router';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useCategories } from '@/hooks/use-categories';
-import { type Treatment } from '@/components/home';
+import { useTreatments } from '@/hooks/use-treatments';
+import { Treatment } from '@/types/treatment';
 
 const PAGE_SIZE_OPTIONS = [5, 10, 20, 'all'] as const;
 type PageSize = (typeof PAGE_SIZE_OPTIONS)[number];
 
-// TODO: Replace with actual data from storage/API
-const TREATMENTS: Treatment[] = [
-  {
-    id: '1',
-    name: '眉毛サロン',
-    date: new Date('2024-12-28'),
-    status: 'completed',
-    category: 'フェイス',
-    place: '銀座店',
-  },
-  {
-    id: '2',
-    name: 'ポテンツァ',
-    date: new Date('2025-01-15'),
-    status: 'scheduled',
-    category: '肌治療',
-    place: '渋谷クリニック',
-  },
-  {
-    id: '3',
-    name: '医療脱毛',
-    date: new Date('2025-01-20'),
-    status: 'scheduled',
-    category: 'ボディ',
-    place: '新宿院',
-  },
-  {
-    id: '4',
-    name: 'フェイシャルエステ（毛穴ケアコース）',
-    date: new Date('2025-02-01'),
-    status: 'scheduled',
-    category: 'フェイス',
-    place: '銀座店',
-  },
-  {
-    id: '5',
-    name: 'ハイフ',
-    date: new Date('2025-02-15'),
-    status: 'scheduled',
-    category: '肌治療',
-    place: '渋谷クリニック',
-  },
-  {
-    id: '6',
-    name: 'ハイフ',
-    date: new Date('2025-02-15'),
-    status: 'scheduled',
-    category: '肌治療',
-    place: '表参道店',
-  },
-  {
-    id: '7',
-    name: 'ハイフ',
-    date: new Date('2025-02-15'),
-    status: 'scheduled',
-    category: '肌治療',
-    place: '渋谷クリニック',
-  },
-  {
-    id: '8',
-    name: 'ハイフ',
-    date: new Date('2025-02-15'),
-    status: 'scheduled',
-    category: '肌治療',
-    place: '新宿院',
-  },
-];
-
-function formatDate(date: Date): string {
+function formatDate(dateString: string): string {
+  const date = new Date(dateString);
   const year = date.getFullYear();
   const month = date.getMonth() + 1;
   const day = date.getDate();
@@ -100,10 +34,12 @@ function truncateName(name: string, maxLength: number = 10): string {
 
 type TreatmentItemProps = {
   treatment: Treatment;
+  categoryLabel?: string;
+  categoryColor?: string;
   onPress?: () => void;
 };
 
-function TreatmentItem({ treatment, onPress }: TreatmentItemProps) {
+function TreatmentItem({ treatment, categoryLabel, categoryColor, onPress }: TreatmentItemProps) {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
 
@@ -121,20 +57,26 @@ function TreatmentItem({ treatment, onPress }: TreatmentItemProps) {
       <View style={styles.itemContent}>
         <ThemedText style={[styles.itemDate, { color: colors.textSecondary }]}>
           {formatDate(treatment.date)}
+          {treatment.startTime && ` ${treatment.startTime}`}
         </ThemedText>
         <ThemedText style={styles.itemName}>
-          {truncateName(treatment.name)}
+          {truncateName(treatment.title)}
         </ThemedText>
+        {treatment.location && (
+          <ThemedText style={[styles.itemLocation, { color: colors.textSecondary }]}>
+            {treatment.location}
+          </ThemedText>
+        )}
       </View>
-      {treatment.category && (
+      {categoryLabel && (
         <View
           style={[
             styles.categoryBadge,
-            { backgroundColor: colors.accentLight },
+            { backgroundColor: categoryColor ? `${categoryColor}30` : colors.accentLight },
           ]}
         >
-          <ThemedText style={[styles.categoryText, { color: colors.accent }]}>
-            {treatment.category}
+          <ThemedText style={[styles.categoryText, { color: categoryColor || colors.accent }]}>
+            {categoryLabel}
           </ThemedText>
         </View>
       )}
@@ -152,38 +94,45 @@ export default function TreatmentListScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const [currentPage, setCurrentPage] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [pageSize, setPageSize] = useState<PageSize>(5);
 
-  // Get categories from category management
   const { categories } = useCategories();
+  const { treatments, loading, refresh } = useTreatments();
 
-  // Filter and sort treatments
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+    }, [refresh])
+  );
+
+  const getCategoryById = useCallback(
+    (categoryId: string) => categories.find((c) => c.id === categoryId),
+    [categories]
+  );
+
   const filteredTreatments = useMemo(() => {
-    let result = [...TREATMENTS];
+    let result = [...treatments];
 
-    // Filter by search query (name or place)
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       result = result.filter(
         (t) =>
-          t.name.toLowerCase().includes(query) ||
-          (t.place && t.place.toLowerCase().includes(query))
+          t.title.toLowerCase().includes(query) ||
+          (t.location && t.location.toLowerCase().includes(query))
       );
     }
 
-    // Filter by category
-    if (selectedCategory) {
-      result = result.filter((t) => t.category === selectedCategory);
+    if (selectedCategoryId) {
+      result = result.filter((t) => t.categoryId === selectedCategoryId);
     }
 
-    // Sort by date descending (future first)
-    return result.sort((a, b) => b.date.getTime() - a.date.getTime());
-  }, [searchQuery, selectedCategory]);
+    return result.sort((a, b) => b.date.localeCompare(a.date));
+  }, [treatments, searchQuery, selectedCategoryId]);
 
-  // Pagination logic
   const itemsPerPage = pageSize === 'all' ? filteredTreatments.length : pageSize;
   const totalPages = pageSize === 'all' ? 1 : Math.ceil(filteredTreatments.length / itemsPerPage);
   const startIndex = currentPage * itemsPerPage;
@@ -191,14 +140,13 @@ export default function TreatmentListScreen() {
     ? filteredTreatments
     : filteredTreatments.slice(startIndex, startIndex + itemsPerPage);
 
-  // Reset to first page when filters change
   const handleSearchChange = (text: string) => {
     setSearchQuery(text);
     setCurrentPage(0);
   };
 
-  const handleCategorySelect = (category: string | null) => {
-    setSelectedCategory(category);
+  const handleCategorySelect = (categoryId: string | null) => {
+    setSelectedCategoryId(categoryId);
     setCurrentPage(0);
   };
 
@@ -212,8 +160,7 @@ export default function TreatmentListScreen() {
   };
 
   const handleTreatmentPress = (treatment: Treatment) => {
-    // TODO: Navigate to treatment detail
-    console.log('Treatment pressed:', treatment.id);
+    router.push(`/treatments/${treatment.id}`);
   };
 
   const handlePrevPage = () => {
@@ -228,6 +175,21 @@ export default function TreatmentListScreen() {
     }
   };
 
+  if (loading) {
+    return (
+      <ThemedView style={[styles.container, styles.loadingContainer]}>
+        <Stack.Screen
+          options={{
+            title: '施術一覧',
+            headerStyle: { backgroundColor: colors.background },
+            headerTintColor: colors.text,
+          }}
+        />
+        <ActivityIndicator size="large" color={colors.accent} />
+      </ThemedView>
+    );
+  }
+
   return (
     <ThemedView style={styles.container}>
       <Stack.Screen
@@ -238,9 +200,7 @@ export default function TreatmentListScreen() {
         }}
       />
 
-      {/* Search and Filter Section */}
       <View style={styles.filterSection}>
-        {/* Search Bar */}
         <View
           style={[
             styles.searchBar,
@@ -265,7 +225,6 @@ export default function TreatmentListScreen() {
           )}
         </View>
 
-        {/* Category Filter */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -275,8 +234,8 @@ export default function TreatmentListScreen() {
             style={[
               styles.categoryChip,
               {
-                backgroundColor: selectedCategory === null ? colors.accent : colors.surface,
-                borderColor: selectedCategory === null ? colors.accent : colors.border,
+                backgroundColor: selectedCategoryId === null ? colors.accent : colors.surface,
+                borderColor: selectedCategoryId === null ? colors.accent : colors.border,
               },
             ]}
             onPress={() => handleCategorySelect(null)}
@@ -284,14 +243,14 @@ export default function TreatmentListScreen() {
             <ThemedText
               style={[
                 styles.categoryChipText,
-                { color: selectedCategory === null ? '#fff' : colors.text },
+                { color: selectedCategoryId === null ? '#fff' : colors.text },
               ]}
             >
               すべて
             </ThemedText>
           </Pressable>
           {categories.map((category) => {
-            const isSelected = selectedCategory === category.label;
+            const isSelected = selectedCategoryId === category.id;
             return (
               <Pressable
                 key={category.id}
@@ -302,7 +261,7 @@ export default function TreatmentListScreen() {
                     borderColor: isSelected ? category.color : colors.border,
                   },
                 ]}
-                onPress={() => handleCategorySelect(category.label)}
+                onPress={() => handleCategorySelect(category.id)}
               >
                 {!isSelected && (
                   <View
@@ -322,7 +281,6 @@ export default function TreatmentListScreen() {
           })}
         </ScrollView>
 
-        {/* Page Size Selector */}
         <View style={styles.pageSizeSelector}>
           <ThemedText style={[styles.pageSizeLabel, { color: colors.textSecondary }]}>
             表示件数:
@@ -361,12 +319,17 @@ export default function TreatmentListScreen() {
           styles.listContent,
           { paddingBottom: totalPages > 1 && pageSize !== 'all' ? 80 : insets.bottom + 20 },
         ]}
-        renderItem={({ item }) => (
-          <TreatmentItem
-            treatment={item}
-            onPress={() => handleTreatmentPress(item)}
-          />
-        )}
+        renderItem={({ item }) => {
+          const category = getCategoryById(item.categoryId);
+          return (
+            <TreatmentItem
+              treatment={item}
+              categoryLabel={category?.label}
+              categoryColor={category?.color}
+              onPress={() => handleTreatmentPress(item)}
+            />
+          );
+        }}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Ionicons
@@ -377,7 +340,7 @@ export default function TreatmentListScreen() {
             <ThemedText
               style={[styles.emptyText, { color: colors.textSecondary }]}
             >
-              {searchQuery || selectedCategory
+              {searchQuery || selectedCategoryId
                 ? '該当する施術がありません'
                 : '施術の予定がありません'}
             </ThemedText>
@@ -463,6 +426,10 @@ export default function TreatmentListScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   filterSection: {
     paddingHorizontal: 16,
@@ -553,6 +520,10 @@ const styles = StyleSheet.create({
   itemName: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  itemLocation: {
+    fontSize: 12,
+    marginTop: 2,
   },
   categoryBadge: {
     paddingHorizontal: 10,

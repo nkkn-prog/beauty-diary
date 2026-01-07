@@ -13,6 +13,7 @@ export const Colors = {
   light: {
     text: '#4A5568', // Charcoal gray - main text
     textSecondary: '#718096', // Lighter gray for secondary text
+    secondaryText: '#718096', // Alias for textSecondary
     background: '#F8F8F6', // Off-white / warm gray
     surface: '#FFFFFF', // Card backgrounds
     tint: accentLight,
@@ -21,14 +22,19 @@ export const Colors = {
     tabIconSelected: accentLight,
     border: '#E2E2E0',
     accent: accentLight,
+    primary: accentLight, // Alias for accent
     accentLight: '#E8F0EB', // Sage green light - backgrounds
     secondary: '#8B7355', // Greige - sub accent
     success: '#68A67D',
+    successBackground: '#F0FFF4',
     error: '#C53030',
+    errorBackground: '#FFF5F5',
+    inputBackground: '#FFFFFF',
   },
   dark: {
     text: '#E2E8F0',
     textSecondary: '#A0AEC0',
+    secondaryText: '#A0AEC0', // Alias for textSecondary
     background: '#1A1D1E',
     surface: '#2D3436',
     tint: accentDark,
@@ -37,10 +43,14 @@ export const Colors = {
     tabIconSelected: accentDark,
     border: '#4A5568',
     accent: accentDark,
+    primary: accentDark, // Alias for accent
     accentLight: '#2D3D35',
     secondary: '#A08060',
     success: '#68D391',
+    successBackground: '#1C2D22',
     error: '#FC8181',
+    errorBackground: '#2D2020',
+    inputBackground: '#2D3436',
   },
 };
 

@@ -13,26 +13,41 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 type Props = {
   latestComparisonDate?: Date;
   onPress: () => void;
+  comingSoon?: boolean;
 };
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-export function BeforeAfterCard({ latestComparisonDate, onPress }: Props) {
+export function BeforeAfterCard({ latestComparisonDate, onPress, comingSoon }: Props) {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const scale = useSharedValue(1);
 
   const handlePressIn = () => {
-    scale.value = withSpring(0.98);
+    if (!comingSoon) {
+      scale.value = withSpring(0.98);
+    }
   };
 
   const handlePressOut = () => {
-    scale.value = withSpring(1);
+    if (!comingSoon) {
+      scale.value = withSpring(1);
+    }
   };
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
+
+  const getSubtitle = () => {
+    if (comingSoon) {
+      return '準備中';
+    }
+    if (latestComparisonDate) {
+      return `最新の比較: ${latestComparisonDate.getMonth() + 1}/${latestComparisonDate.getDate()}`;
+    }
+    return '変化を記録しよう';
+  };
 
   return (
     <AnimatedPressable
@@ -41,12 +56,14 @@ export function BeforeAfterCard({ latestComparisonDate, onPress }: Props) {
         {
           backgroundColor: colors.surface,
           borderColor: colors.border,
+          opacity: comingSoon ? 0.6 : 1,
         },
         animatedStyle,
       ]}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
-      onPress={onPress}
+      onPress={comingSoon ? undefined : onPress}
+      disabled={comingSoon}
     >
       <View style={styles.content}>
         <View style={styles.iconContainer}>
@@ -65,17 +82,17 @@ export function BeforeAfterCard({ latestComparisonDate, onPress }: Props) {
           <ThemedText
             style={[styles.subtitle, { color: colors.textSecondary }]}
           >
-            {latestComparisonDate
-              ? `最新の比較: ${latestComparisonDate.getMonth() + 1}/${latestComparisonDate.getDate()}`
-              : '変化を記録しよう'}
+            {getSubtitle()}
           </ThemedText>
         </View>
 
-        <Ionicons
-          name="chevron-forward"
-          size={20}
-          color={colors.textSecondary}
-        />
+        {!comingSoon && (
+          <Ionicons
+            name="chevron-forward"
+            size={20}
+            color={colors.textSecondary}
+          />
+        )}
       </View>
     </AnimatedPressable>
   );

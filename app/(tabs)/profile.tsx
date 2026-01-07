@@ -1,7 +1,9 @@
-import { StyleSheet, View, Pressable, ScrollView } from 'react-native';
+import { StyleSheet, View, Pressable, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useAuth, useUser } from '@clerk/clerk-expo';
+import { useState } from 'react';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -33,8 +35,10 @@ function MenuItem({ icon, label, onPress, colors }: MenuItemProps) {
 export default function ProfileScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
-  const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { signOut } = useAuth();
+  const { user } = useUser();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleCategoriesPress = () => {
     router.push('/settings/categories');
@@ -44,8 +48,37 @@ export default function ProfileScreen() {
     router.push('/settings/supplements');
   };
 
+  const handleLogout = () => {
+    Alert.alert(
+      'ログアウト',
+      'ログアウトしてもよろしいですか？',
+      [
+        {
+          text: 'キャンセル',
+          style: 'cancel',
+        },
+        {
+          text: 'ログアウト',
+          style: 'destructive',
+          onPress: async () => {
+            setIsLoggingOut(true);
+            try {
+              await signOut();
+            } catch (error) {
+              console.error('Logout failed:', error);
+              Alert.alert('エラー', 'ログアウトに失敗しました');
+            } finally {
+              setIsLoggingOut(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
-    <ThemedView style={[styles.container, { paddingTop: insets.top + 16 }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+      <View style={{ height: 20 }} />
       <View style={styles.header}>
         <ThemedText style={styles.title}>マイページ</ThemedText>
       </View>
@@ -55,6 +88,23 @@ export default function ProfileScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
+        {/* ユーザー情報 */}
+        <View style={[styles.userCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View style={[styles.avatarContainer, { backgroundColor: colors.accentLight }]}>
+            <ThemedText style={[styles.avatarText, { color: colors.accent }]}>
+              {user?.emailAddresses?.[0]?.emailAddress?.charAt(0).toUpperCase() || '?'}
+            </ThemedText>
+          </View>
+          <View style={styles.userInfo}>
+            <ThemedText style={styles.userEmail} numberOfLines={1}>
+              {user?.emailAddresses?.[0]?.emailAddress || 'ユーザー'}
+            </ThemedText>
+            <ThemedText style={[styles.userStatus, { color: colors.textSecondary }]}>
+              ログイン中
+            </ThemedText>
+          </View>
+        </View>
+
         <View style={styles.section}>
           <ThemedText style={[styles.sectionTitle, { color: colors.textSecondary }]}>
             設定
@@ -74,21 +124,34 @@ export default function ProfileScreen() {
           />
         </View>
 
-        <View style={styles.placeholder}>
-          <View
-            style={[
-              styles.iconContainer,
-              { backgroundColor: colors.accentLight },
-            ]}
-          >
-            <Ionicons name="construct-outline" size={32} color={colors.accent} />
-          </View>
-          <ThemedText style={[styles.placeholderText, { color: colors.textSecondary }]}>
-            その他の設定は{'\n'}今後追加予定
+        {/* ログアウトボタン */}
+        <View style={styles.section}>
+          <ThemedText style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+            アカウント
           </ThemedText>
+          <Pressable
+            style={[styles.logoutButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            onPress={handleLogout}
+            disabled={isLoggingOut}
+          >
+            {isLoggingOut ? (
+              <ActivityIndicator size="small" color={colors.error} />
+            ) : (
+              <>
+                <View style={[styles.menuIconContainer, { backgroundColor: colors.errorBackground }]}>
+                  <Ionicons name="log-out-outline" size={20} color={colors.error} />
+                </View>
+                <ThemedText style={[styles.logoutText, { color: colors.error }]}>
+                  ログアウト
+                </ThemedText>
+              </>
+            )}
+          </Pressable>
         </View>
+
+        <View style={{ height: 40 }} />
       </ScrollView>
-    </ThemedView>
+    </SafeAreaView>
   );
 }
 
@@ -98,10 +161,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   header: {
-    marginBottom: 24,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
   },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '700',
   },
   scrollView: {
@@ -109,6 +173,37 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingBottom: 40,
+  },
+  userCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 24,
+  },
+  avatarContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  avatarText: {
+    fontSize: 20,
+    fontWeight: '600',
+  },
+  userInfo: {
+    flex: 1,
+  },
+  userEmail: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  userStatus: {
+    fontSize: 13,
+    marginTop: 2,
   },
   section: {
     marginBottom: 24,
@@ -138,23 +233,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
-  placeholder: {
-    flex: 1,
+  logoutButton: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
   },
-  iconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  placeholderText: {
-    fontSize: 14,
-    textAlign: 'center',
-    lineHeight: 22,
+  logoutText: {
+    fontSize: 16,
+    fontWeight: '500',
   },
 });
