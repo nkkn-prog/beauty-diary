@@ -107,7 +107,7 @@ export async function createGoogleCalendarEvent(
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error('[GoogleCalendar] API error:', errorData);
+      console.error('[GoogleCalendar] API error:', response.status, errorData);
 
       if (response.status === 401) {
         return { success: false, error: 'token_expired' };
@@ -119,6 +119,7 @@ export async function createGoogleCalendarEvent(
     }
 
     const data = await response.json();
+    console.log('[GoogleCalendar] Event created, id:', data.id);
     return { success: true, eventId: data.id };
   } catch (error) {
     console.error('[GoogleCalendar] Network error:', error);
@@ -135,6 +136,59 @@ export async function addTreatmentToGoogleCalendar(
 ): Promise<CreateEventResult> {
   const event = treatmentToCalendarEvent(treatment);
   return createGoogleCalendarEvent(accessToken, event);
+}
+
+export type DeleteEventResult = {
+  success: boolean;
+  error?: string;
+};
+
+/**
+ * Google CalendarからイベントをID指定で削除
+ */
+export async function deleteGoogleCalendarEvent(
+  accessToken: string,
+  eventId: string
+): Promise<DeleteEventResult> {
+  try {
+    console.log('[GoogleCalendar] Deleting event:', eventId);
+
+    const response = await fetch(
+      `${GOOGLE_CALENDAR_API_BASE}/calendars/primary/events/${eventId}`,
+      {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    console.log('[GoogleCalendar] Delete response status:', response.status);
+
+    // 204 No Content = success, 410 Gone = already deleted
+    if (response.ok || response.status === 204 || response.status === 410) {
+      console.log('[GoogleCalendar] Event deleted successfully, status:', response.status);
+      return { success: true };
+    }
+
+    const errorData = await response.json().catch(() => ({}));
+    console.error('[GoogleCalendar] Delete error:', errorData);
+
+    if (response.status === 401) {
+      return { success: false, error: 'token_expired' };
+    }
+    if (response.status === 403) {
+      return { success: false, error: 'permission_denied' };
+    }
+    if (response.status === 404) {
+      // Event not found - treat as success since it doesn't exist
+      return { success: true };
+    }
+    return { success: false, error: 'api_error' };
+  } catch (error) {
+    console.error('[GoogleCalendar] Network error:', error);
+    return { success: false, error: 'network_error' };
+  }
 }
 
 export const GOOGLE_CALENDAR_ERROR_MESSAGES: Record<string, string> = {

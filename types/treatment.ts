@@ -19,6 +19,7 @@ export type Treatment = {
   price?: number;        // Price in JPY
   notes?: string;
   status: TreatmentStatus;
+  googleCalendarEventId?: string;  // Google Calendar event ID
   createdAt: string;
   updatedAt: string;
 };

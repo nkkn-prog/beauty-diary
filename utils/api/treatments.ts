@@ -14,6 +14,7 @@ type ApiTreatment = {
   price: number | null;
   notes: string | null;
   status: ApiTreatmentStatus;
+  googleCalendarEventId: string | null;
   createdAt: string;
   updatedAt: string;
   category?: Category;
@@ -39,6 +40,7 @@ function toTreatment(api: ApiTreatment): Treatment {
     price: api.price ?? undefined,
     notes: api.notes ?? undefined,
     status: toStatus(api.status),
+    googleCalendarEventId: api.googleCalendarEventId ?? undefined,
     createdAt: api.createdAt,
     updatedAt: api.updatedAt,
   };
@@ -101,7 +103,9 @@ export async function createTreatment(
   return toTreatment(data);
 }
 
-export type UpdateTreatmentInput = Partial<CreateTreatmentInput>;
+export type UpdateTreatmentInput = Partial<CreateTreatmentInput> & {
+  googleCalendarEventId?: string;
+};
 
 export async function updateTreatment(
   token: string,

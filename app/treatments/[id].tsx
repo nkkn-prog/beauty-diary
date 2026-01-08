@@ -57,7 +57,7 @@ export default function EditTreatmentScreen() {
     remove: deleteTreatment,
   } = useTreatments();
   const { showToast } = useToast();
-  const { addTreatmentToCalendar, isAdding, isGoogleUser, promptGoogleLogin } =
+  const { addTreatmentToCalendar, deleteFromCalendar, isAdding, isGoogleUser, promptGoogleLogin } =
     useGoogleCalendar();
 
   const [treatment, setTreatment] = useState<Treatment | null>(null);
@@ -278,9 +278,14 @@ export default function EditTreatmentScreen() {
   };
 
   const handleDelete = () => {
+    const hasCalendarEvent = !!treatment?.googleCalendarEventId;
+    const message = hasCalendarEvent
+      ? 'この施術を削除しますか？Google Calendarの予定も削除されます。この操作は取り消せません。'
+      : 'この施術を削除しますか？この操作は取り消せません。';
+
     Alert.alert(
       '施術を削除',
-      'この施術を削除しますか？この操作は取り消せません。',
+      message,
       [
         { text: 'キャンセル', style: 'cancel' },
         {
@@ -289,6 +294,25 @@ export default function EditTreatmentScreen() {
           onPress: async () => {
             if (!id) return;
             try {
+              // Google Calendarから削除（eventIdがある場合のみ）
+              console.log('[Delete] Treatment data:', {
+                id: treatment?.id,
+                googleCalendarEventId: treatment?.googleCalendarEventId,
+                isGoogleUser,
+              });
+
+              if (treatment?.googleCalendarEventId && isGoogleUser) {
+                console.log('[Delete] Deleting from Google Calendar, eventId:', treatment.googleCalendarEventId);
+                const calendarResult = await deleteFromCalendar(treatment.googleCalendarEventId);
+                console.log('[Delete] Calendar delete result:', calendarResult);
+                if (!calendarResult.success) {
+                  console.warn('[Delete] Failed to delete from calendar:', calendarResult.error);
+                  // カレンダー削除失敗してもアプリからは削除を続行
+                }
+              } else {
+                console.log('[Delete] Skipping calendar delete - no eventId or not Google user');
+              }
+
               await deleteTreatment(id);
               showToast({ message: '削除しました', type: 'success' });
               router.replace('/(tabs)/calendar');
@@ -307,7 +331,7 @@ export default function EditTreatmentScreen() {
   };
 
   const handleAddToCalendar = async () => {
-    if (!treatment || isAdding) return;
+    if (!treatment || !id || isAdding) return;
 
     if (!isGoogleUser) {
       promptGoogleLogin();
@@ -315,10 +339,26 @@ export default function EditTreatmentScreen() {
     }
 
     const result = await addTreatmentToCalendar(treatment);
+    console.log('[Calendar] Add result:', result);
 
-    if (result.success) {
+    if (result.success && result.eventId) {
+      // eventIdをDBに保存
+      console.log('[Calendar] Saving eventId to DB:', result.eventId);
+      try {
+        const updated = await updateTreatment(id, { googleCalendarEventId: result.eventId });
+        console.log('[Calendar] Updated treatment:', updated?.googleCalendarEventId);
+        if (updated) {
+          setTreatment(updated);
+        }
+        showToast({ message: 'Google Calendarに追加しました', type: 'success' });
+      } catch (error) {
+        console.error('[Calendar] Failed to save eventId:', error);
+        showToast({ message: 'Google Calendarに追加しました', type: 'success' });
+      }
+    } else if (result.success && !result.eventId) {
+      console.warn('[Calendar] Success but no eventId returned');
       showToast({ message: 'Google Calendarに追加しました', type: 'success' });
-    } else {
+    } else if (!result.success) {
       const message = getGoogleCalendarErrorMessage(result.error ?? 'unknown_error');
       Alert.alert('エラー', message);
     }

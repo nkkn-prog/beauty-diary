@@ -4,13 +4,18 @@ import { useUser, useAuth } from '@clerk/clerk-expo';
 import { Treatment } from '@/types/treatment';
 import {
   addTreatmentToGoogleCalendar,
+  deleteGoogleCalendarEvent,
   CreateEventResult,
+  DeleteEventResult,
 } from '@/utils/google-calendar';
+import { getGoogleToken } from '@/utils/api/auth';
 
 type UseGoogleCalendarResult = {
   isAdding: boolean;
+  isDeleting: boolean;
   isGoogleUser: boolean;
   addTreatmentToCalendar: (treatment: Treatment) => Promise<CreateEventResult>;
+  deleteFromCalendar: (eventId: string) => Promise<DeleteEventResult>;
   promptGoogleLogin: () => void;
 };
 
@@ -18,6 +23,7 @@ export function useGoogleCalendar(): UseGoogleCalendarResult {
   const { user } = useUser();
   const { getToken } = useAuth();
   const [isAdding, setIsAdding] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Googleアカウントでログインしているかチェック
   const googleAccount = user?.externalAccounts?.find(
@@ -41,18 +47,31 @@ export function useGoogleCalendar(): UseGoogleCalendarResult {
 
       setIsAdding(true);
       try {
-        // ClerkのJWTテンプレート経由でGoogleのOAuthアクセストークンを取得
-        // Clerkダッシュボードで "google_oauth" テンプレートを作成する必要がある
-        const token = await getToken({ template: 'oauth_google' });
+        // Clerk認証トークンを取得
+        console.log('[useGoogleCalendar] Getting Clerk token...');
+        const clerkToken = await getToken();
 
-        if (!token) {
+        if (!clerkToken) {
+          console.error('[useGoogleCalendar] No Clerk token');
           return { success: false, error: 'token_expired' };
         }
 
-        return await addTreatmentToGoogleCalendar(token, treatment);
+        // バックエンドAPIからGoogle OAuthトークンを取得
+        console.log('[useGoogleCalendar] Getting Google token from backend...');
+        const { accessToken: googleAccessToken } = await getGoogleToken(clerkToken);
+        console.log('[useGoogleCalendar] Got Google token, adding to calendar...');
+
+        return await addTreatmentToGoogleCalendar(googleAccessToken, treatment);
       } catch (error) {
         console.error('[useGoogleCalendar] Error:', error);
-        return { success: false, error: 'unknown_error' };
+        // APIエラーの場合はメッセージを確認
+        if (error instanceof Error && error.message.includes('Googleアカウント')) {
+          return { success: false, error: 'not_google_user' };
+        }
+        if (error instanceof Error && error.message.includes('認証が切れ')) {
+          return { success: false, error: 'token_expired' };
+        }
+        return { success: false, error: 'api_error' };
       } finally {
         setIsAdding(false);
       }
@@ -60,10 +79,43 @@ export function useGoogleCalendar(): UseGoogleCalendarResult {
     [isGoogleUser, googleAccount, getToken]
   );
 
+  const deleteFromCalendar = useCallback(
+    async (eventId: string): Promise<DeleteEventResult> => {
+      if (!isGoogleUser || !googleAccount) {
+        return { success: false, error: 'not_google_user' };
+      }
+
+      setIsDeleting(true);
+      try {
+        console.log('[useGoogleCalendar] Getting Clerk token for delete...');
+        const clerkToken = await getToken();
+
+        if (!clerkToken) {
+          console.error('[useGoogleCalendar] No Clerk token');
+          return { success: false, error: 'token_expired' };
+        }
+
+        console.log('[useGoogleCalendar] Getting Google token from backend...');
+        const { accessToken: googleAccessToken } = await getGoogleToken(clerkToken);
+        console.log('[useGoogleCalendar] Got Google token, deleting from calendar...');
+
+        return await deleteGoogleCalendarEvent(googleAccessToken, eventId);
+      } catch (error) {
+        console.error('[useGoogleCalendar] Delete error:', error);
+        return { success: false, error: 'api_error' };
+      } finally {
+        setIsDeleting(false);
+      }
+    },
+    [isGoogleUser, googleAccount, getToken]
+  );
+
   return {
     isAdding,
+    isDeleting,
     isGoogleUser,
     addTreatmentToCalendar,
+    deleteFromCalendar,
     promptGoogleLogin,
   };
 }

@@ -43,3 +43,19 @@ export async function getAuthStatus(token: string): Promise<AuthStatusResponse> 
     token,
   });
 }
+
+interface GoogleTokenResponse {
+  accessToken: string;
+  scopes: string[];
+}
+
+/**
+ * Google OAuthアクセストークンを取得
+ * Google Calendar連携などに使用
+ */
+export async function getGoogleToken(token: string): Promise<GoogleTokenResponse> {
+  return apiRequest<GoogleTokenResponse>('/api/v1/auth/google-token', {
+    method: 'GET',
+    token,
+  });
+}

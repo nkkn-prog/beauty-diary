@@ -41,7 +41,7 @@ export default function NewTreatmentScreen() {
   const router = useRouter();
   const { date } = useLocalSearchParams<{ date: string }>();
   const { categories, loading: categoriesLoading } = useCategories();
-  const { add: addTreatment } = useTreatments();
+  const { add: addTreatment, update: updateTreatment } = useTreatments();
   const { showToast } = useToast();
   const { addTreatmentToCalendar, isGoogleUser } = useGoogleCalendar();
 
@@ -256,12 +256,32 @@ export default function NewTreatmentScreen() {
         {
           text: 'Google Calendarに追加',
           onPress: async () => {
+            console.log('[Calendar New] Adding to calendar for treatment:', newTreatment.id);
             const result = await addTreatmentToCalendar(newTreatment);
-            if (result.success) {
+            console.log('[Calendar New] Result:', result);
+
+            if (result.success && result.eventId) {
+              // eventIdをDBに保存
+              console.log('[Calendar New] Saving eventId:', result.eventId);
+              try {
+                await updateTreatment(newTreatment.id, { googleCalendarEventId: result.eventId });
+                console.log('[Calendar New] EventId saved successfully');
+              } catch (error) {
+                console.error('[Calendar New] Failed to save eventId:', error);
+              }
               showToast({ message: 'Google Calendarに追加しました', type: 'success' });
-            } else {
+            } else if (result.success && !result.eventId) {
+              console.warn('[Calendar New] Success but no eventId');
+              showToast({ message: 'Google Calendarに追加しました', type: 'success' });
+            } else if (!result.success) {
+              console.error('[Calendar New] Failed to add:', result.error);
+              const errorMessage = result.error === 'permission_denied'
+                ? 'カレンダーへのアクセス権限がありません。再ログインしてください。'
+                : result.error === 'token_expired'
+                ? 'Google認証が切れました。再ログインしてください。'
+                : `カレンダーへの追加に失敗しました (${result.error})`;
               showToast({
-                message: 'カレンダーへの追加に失敗しました',
+                message: errorMessage,
                 type: 'error',
               });
             }
