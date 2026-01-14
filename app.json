@@ -1,15 +1,23 @@
 {
   "expo": {
-    "name": "BeautyDiary",
-    "slug": "BeautyDiary",
+    "name": "美ログ",
+    "slug": "bilog",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "beautydiary",
+    "scheme": "bilog",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.nkkn.bilog",
+      "buildNumber": "1",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCalendarsUsageDescription": "施術予定をカレンダーに連携するために使用します",
+        "NSCalendarsFullAccessUsageDescription": "Google Calendarと連携するために使用します",
+        "NSPhotoLibraryUsageDescription": "施術の写真を保存するために使用します"
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -38,11 +46,17 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
-      "typedRoutes": true,
-      "reactCompiler": true
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "b389c9ae-3d9e-4952-8551-31e9da54708c"
+      }
     }
   }
 }
