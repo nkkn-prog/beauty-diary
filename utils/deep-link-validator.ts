@@ -54,7 +54,9 @@ export function isValidDeepLink(url: string): boolean {
  * 指定されたパスが許可されていない場合はデフォルトのタブ画面にリダイレクト
  */
 export function createSafeRedirectUrl(path: string = '/(tabs)'): string {
-  const scheme = Constants.expoConfig?.scheme || 'bilog';
+  const configScheme = Constants.expoConfig?.scheme;
+  // schemeが配列の場合は最初の要素を使用
+  const scheme = Array.isArray(configScheme) ? configScheme[0] : (configScheme || 'bilog');
 
   // パスが許可リストにあるか確認
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
