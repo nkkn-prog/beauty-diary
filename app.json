@@ -14,8 +14,6 @@
       "buildNumber": "1",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "NSCalendarsUsageDescription": "施術予定をカレンダーに連携するために使用します",
-        "NSCalendarsFullAccessUsageDescription": "Google Calendarと連携するために使用します",
         "NSPhotoLibraryUsageDescription": "施術の写真を保存するために使用します"
       }
     },

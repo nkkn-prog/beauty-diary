@@ -1,6 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Category, DEFAULT_CATEGORIES, MAX_CATEGORIES } from '@/types/treatment';
 
+/**
+ * セキュリティ注意事項:
+ * AsyncStorageは暗号化されていません。
+ * カテゴリデータは低機密性（ラベル、色のみ）のため現状許容していますが、
+ * より機密性の高いデータを追加する場合はsecure-storage.tsへの移行を検討してください。
+ */
 const CATEGORIES_KEY = '@categories';
 
 export async function getCategories(): Promise<Category[]> {
@@ -34,9 +40,15 @@ export async function addCategory(label: string, color: string): Promise<Categor
       throw new Error(`Maximum ${MAX_CATEGORIES} categories allowed`);
     }
 
+    // 入力値のサニタイズ
+    const trimmedLabel = label.trim();
+    if (!trimmedLabel) {
+      throw new Error('カテゴリ名を入力してください');
+    }
+
     const newCategory: Category = {
       id: `category-${Date.now()}`,
-      label,
+      label: trimmedLabel,
       color,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -61,9 +73,18 @@ export async function updateCategory(
       return null;
     }
 
+    // 入力値のサニタイズ
+    const sanitizedUpdates = { ...updates };
+    if (updates.label !== undefined) {
+      sanitizedUpdates.label = updates.label.trim();
+      if (!sanitizedUpdates.label) {
+        throw new Error('カテゴリ名を入力してください');
+      }
+    }
+
     const updated: Category = {
       ...categories[index],
-      ...updates,
+      ...sanitizedUpdates,
       updatedAt: new Date().toISOString(),
     };
 

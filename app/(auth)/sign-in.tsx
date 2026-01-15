@@ -14,13 +14,13 @@ import {
   Image,
 } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
-import * as Linking from 'expo-linking';
 
 WebBrowser.maybeCompleteAuthSession();
 
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { translateAuthError, validateEmail, validatePassword } from '@/utils/auth-errors';
+import { getOAuthRedirectUrl } from '@/utils/deep-link-validator';
 
 interface FormError {
   title: string;
@@ -48,7 +48,7 @@ export default function SignInScreen() {
       clearErrors();
 
       const { createdSessionId, setActive: setActiveSession } = await startOAuthFlow({
-        redirectUrl: Linking.createURL('/(tabs)', { scheme: 'beautydiary' }),
+        redirectUrl: getOAuthRedirectUrl(),
       });
 
       if (createdSessionId && setActiveSession) {

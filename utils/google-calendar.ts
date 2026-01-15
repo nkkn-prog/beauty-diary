@@ -2,6 +2,21 @@ import { Treatment } from '@/types/treatment';
 
 const GOOGLE_CALENDAR_API_BASE = 'https://www.googleapis.com/calendar/v3';
 
+/**
+ * セキュリティ注意事項:
+ *
+ * 現在の実装では、Google OAuthアクセストークンがバックエンドからクライアントに渡され、
+ * クライアントから直接Google Calendar APIを呼び出しています。
+ *
+ * 推奨される改善:
+ * 1. Google Calendar操作をすべてバックエンド側で実行する
+ * 2. クライアントはバックエンドAPIを通じて間接的にカレンダー操作を行う
+ * 3. これにより、トークンがクライアント側に露出することを防げる
+ *
+ * TODO: バックエンドにGoogle Calendar操作エンドポイントを追加し、
+ * クライアント側のトークン使用を廃止する
+ */
+
 export type GoogleCalendarEvent = {
   id?: string;
   summary: string;
@@ -107,7 +122,9 @@ export async function createGoogleCalendarEvent(
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error('[GoogleCalendar] API error:', response.status, errorData);
+      if (__DEV__) {
+        console.error('[GoogleCalendar] API error:', response.status, errorData);
+      }
 
       if (response.status === 401) {
         return { success: false, error: 'token_expired' };
@@ -119,10 +136,14 @@ export async function createGoogleCalendarEvent(
     }
 
     const data = await response.json();
-    console.log('[GoogleCalendar] Event created, id:', data.id);
+    if (__DEV__) {
+      console.log('[GoogleCalendar] Event created, id:', data.id);
+    }
     return { success: true, eventId: data.id };
   } catch (error) {
-    console.error('[GoogleCalendar] Network error:', error);
+    if (__DEV__) {
+      console.error('[GoogleCalendar] Network error:', error);
+    }
     return { success: false, error: 'network_error' };
   }
 }
@@ -151,7 +172,9 @@ export async function deleteGoogleCalendarEvent(
   eventId: string
 ): Promise<DeleteEventResult> {
   try {
-    console.log('[GoogleCalendar] Deleting event:', eventId);
+    if (__DEV__) {
+      console.log('[GoogleCalendar] Deleting event:', eventId);
+    }
 
     const response = await fetch(
       `${GOOGLE_CALENDAR_API_BASE}/calendars/primary/events/${eventId}`,
@@ -163,16 +186,22 @@ export async function deleteGoogleCalendarEvent(
       }
     );
 
-    console.log('[GoogleCalendar] Delete response status:', response.status);
+    if (__DEV__) {
+      console.log('[GoogleCalendar] Delete response status:', response.status);
+    }
 
     // 204 No Content = success, 410 Gone = already deleted
     if (response.ok || response.status === 204 || response.status === 410) {
-      console.log('[GoogleCalendar] Event deleted successfully, status:', response.status);
+      if (__DEV__) {
+        console.log('[GoogleCalendar] Event deleted successfully, status:', response.status);
+      }
       return { success: true };
     }
 
     const errorData = await response.json().catch(() => ({}));
-    console.error('[GoogleCalendar] Delete error:', errorData);
+    if (__DEV__) {
+      console.error('[GoogleCalendar] Delete error:', errorData);
+    }
 
     if (response.status === 401) {
       return { success: false, error: 'token_expired' };
@@ -186,7 +215,9 @@ export async function deleteGoogleCalendarEvent(
     }
     return { success: false, error: 'api_error' };
   } catch (error) {
-    console.error('[GoogleCalendar] Network error:', error);
+    if (__DEV__) {
+      console.error('[GoogleCalendar] Network error:', error);
+    }
     return { success: false, error: 'network_error' };
   }
 }

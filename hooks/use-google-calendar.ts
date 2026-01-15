@@ -48,22 +48,32 @@ export function useGoogleCalendar(): UseGoogleCalendarResult {
       setIsAdding(true);
       try {
         // Clerk認証トークンを取得
-        console.log('[useGoogleCalendar] Getting Clerk token...');
+        if (__DEV__) {
+          console.log('[useGoogleCalendar] Getting Clerk token...');
+        }
         const clerkToken = await getToken();
 
         if (!clerkToken) {
-          console.error('[useGoogleCalendar] No Clerk token');
+          if (__DEV__) {
+            console.error('[useGoogleCalendar] No Clerk token');
+          }
           return { success: false, error: 'token_expired' };
         }
 
         // バックエンドAPIからGoogle OAuthトークンを取得
-        console.log('[useGoogleCalendar] Getting Google token from backend...');
+        if (__DEV__) {
+          console.log('[useGoogleCalendar] Getting Google token from backend...');
+        }
         const { accessToken: googleAccessToken } = await getGoogleToken(clerkToken);
-        console.log('[useGoogleCalendar] Got Google token, adding to calendar...');
+        if (__DEV__) {
+          console.log('[useGoogleCalendar] Got Google token, adding to calendar...');
+        }
 
         return await addTreatmentToGoogleCalendar(googleAccessToken, treatment);
       } catch (error) {
-        console.error('[useGoogleCalendar] Error:', error);
+        if (__DEV__) {
+          console.error('[useGoogleCalendar] Error:', error);
+        }
         // APIエラーの場合はメッセージを確認
         if (error instanceof Error && error.message.includes('Googleアカウント')) {
           return { success: false, error: 'not_google_user' };
@@ -87,21 +97,31 @@ export function useGoogleCalendar(): UseGoogleCalendarResult {
 
       setIsDeleting(true);
       try {
-        console.log('[useGoogleCalendar] Getting Clerk token for delete...');
+        if (__DEV__) {
+          console.log('[useGoogleCalendar] Getting Clerk token for delete...');
+        }
         const clerkToken = await getToken();
 
         if (!clerkToken) {
-          console.error('[useGoogleCalendar] No Clerk token');
+          if (__DEV__) {
+            console.error('[useGoogleCalendar] No Clerk token');
+          }
           return { success: false, error: 'token_expired' };
         }
 
-        console.log('[useGoogleCalendar] Getting Google token from backend...');
+        if (__DEV__) {
+          console.log('[useGoogleCalendar] Getting Google token from backend...');
+        }
         const { accessToken: googleAccessToken } = await getGoogleToken(clerkToken);
-        console.log('[useGoogleCalendar] Got Google token, deleting from calendar...');
+        if (__DEV__) {
+          console.log('[useGoogleCalendar] Got Google token, deleting from calendar...');
+        }
 
         return await deleteGoogleCalendarEvent(googleAccessToken, eventId);
       } catch (error) {
-        console.error('[useGoogleCalendar] Delete error:', error);
+        if (__DEV__) {
+          console.error('[useGoogleCalendar] Delete error:', error);
+        }
         return { success: false, error: 'api_error' };
       } finally {
         setIsDeleting(false);

@@ -1,7 +1,30 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Supplement, MAX_SUPPLEMENTS } from '@/types/treatment';
 
+/**
+ * セキュリティ注意事項:
+ * AsyncStorageは暗号化されていません。
+ * サプリメントデータは低機密性（名前、絵文字、URLのみ）のため現状許容していますが、
+ * より機密性の高いデータを追加する場合はsecure-storage.tsへの移行を検討してください。
+ */
 const SUPPLEMENTS_KEY = '@supplements';
+
+/**
+ * URLが安全なプロトコル（http/https）を使用しているかバリデート
+ */
+function validateUrl(url: string): void {
+  try {
+    const parsed = new URL(url);
+    if (!['http:', 'https:'].includes(parsed.protocol)) {
+      throw new Error('URLはhttp://またはhttps://で始まる必要があります');
+    }
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('http')) {
+      throw error;
+    }
+    throw new Error('無効なURL形式です');
+  }
+}
 
 export async function getSupplements(): Promise<Supplement[]> {
   try {
@@ -32,11 +55,22 @@ export async function addSupplement(name: string, emoji: string, url?: string): 
       throw new Error(`Maximum ${MAX_SUPPLEMENTS} supplements allowed`);
     }
 
+    // URLバリデーション
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      throw new Error('サプリメント名を入力してください');
+    }
+
+    const trimmedUrl = url?.trim();
+    if (trimmedUrl) {
+      validateUrl(trimmedUrl);
+    }
+
     const newSupplement: Supplement = {
       id: `supplement-${Date.now()}`,
-      name,
+      name: trimmedName,
       emoji,
-      url,
+      url: trimmedUrl,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -60,9 +94,25 @@ export async function updateSupplement(
       return null;
     }
 
+    // 入力値のサニタイズとバリデーション
+    const sanitizedUpdates = { ...updates };
+    if (updates.name !== undefined) {
+      sanitizedUpdates.name = updates.name.trim();
+      if (!sanitizedUpdates.name) {
+        throw new Error('サプリメント名を入力してください');
+      }
+    }
+    if (updates.url !== undefined) {
+      const trimmedUrl = updates.url?.trim();
+      if (trimmedUrl) {
+        validateUrl(trimmedUrl);
+      }
+      sanitizedUpdates.url = trimmedUrl || undefined;
+    }
+
     const updated: Supplement = {
       ...supplements[index],
-      ...updates,
+      ...sanitizedUpdates,
       updatedAt: new Date().toISOString(),
     };
 
