@@ -8,6 +8,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -19,8 +20,9 @@ import { Category, COLOR_PALETTE } from '@/types/treatment';
 type CategoryEditModalProps = {
   visible: boolean;
   category: Category | null;
-  onSave: (label: string, color: string) => void;
+  onSave: (label: string, color: string) => Promise<void>;
   onClose: () => void;
+  saving?: boolean;
 };
 
 export function CategoryEditModal({
@@ -28,6 +30,7 @@ export function CategoryEditModal({
   category,
   onSave,
   onClose,
+  saving,
 }: CategoryEditModalProps) {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
@@ -46,9 +49,9 @@ export function CategoryEditModal({
     }
   }, [category, visible]);
 
-  const handleSave = () => {
-    if (label.trim()) {
-      onSave(label.trim(), selectedColor);
+  const handleSave = async () => {
+    if (label.trim() && !saving) {
+      await onSave(label.trim(), selectedColor);
       onClose();
     }
   };
@@ -80,17 +83,21 @@ export function CategoryEditModal({
               </ThemedText>
               <Pressable
                 onPress={handleSave}
-                disabled={!label.trim()}
+                disabled={!label.trim() || saving}
                 hitSlop={8}
               >
-                <ThemedText
-                  style={[
-                    styles.headerButton,
-                    { color: label.trim() ? colors.accent : colors.textSecondary },
-                  ]}
-                >
-                  保存
-                </ThemedText>
+                {saving ? (
+                  <ActivityIndicator size="small" color={colors.accent} />
+                ) : (
+                  <ThemedText
+                    style={[
+                      styles.headerButton,
+                      { color: label.trim() ? colors.accent : colors.textSecondary },
+                    ]}
+                  >
+                    保存
+                  </ThemedText>
+                )}
               </Pressable>
             </View>
 

@@ -356,19 +356,23 @@ export default function NewTreatmentScreen() {
           headerRight: () => (
             <Pressable
               onPress={handleSave}
-              disabled={!title.trim()}
+              disabled={!title.trim() || saving}
               hitSlop={8}
             >
-              <ThemedText
-                style={[
-                  styles.saveButton,
-                  {
-                    color: title.trim() ? colors.accent : colors.textSecondary,
-                  },
-                ]}
-              >
-                保存
-              </ThemedText>
+              {saving ? (
+                <ActivityIndicator size="small" color={colors.accent} />
+              ) : (
+                <ThemedText
+                  style={[
+                    styles.saveButton,
+                    {
+                      color: title.trim() ? colors.accent : colors.textSecondary,
+                    },
+                  ]}
+                >
+                  保存
+                </ThemedText>
+              )}
             </Pressable>
           ),
         }}

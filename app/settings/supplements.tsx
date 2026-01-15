@@ -29,6 +29,8 @@ export default function SupplementsScreen() {
 
   const [modalVisible, setModalVisible] = useState(false);
   const [editingSupplement, setEditingSupplement] = useState<Supplement | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const handleAdd = () => {
     setEditingSupplement(null);
@@ -51,9 +53,12 @@ export default function SupplementsScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
+              setDeletingId(supplement.id);
               await remove(supplement.id);
             } catch {
               Alert.alert('エラー', '削除に失敗しました');
+            } finally {
+              setDeletingId(null);
             }
           },
         },
@@ -63,6 +68,7 @@ export default function SupplementsScreen() {
 
   const handleSave = async (name: string, emoji: string, url?: string) => {
     try {
+      setSaving(true);
       if (editingSupplement) {
         await update(editingSupplement.id, { name, emoji, url });
       } else {
@@ -70,6 +76,9 @@ export default function SupplementsScreen() {
       }
     } catch {
       Alert.alert('エラー', '保存に失敗しました');
+      throw new Error('保存に失敗しました');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -143,8 +152,13 @@ export default function SupplementsScreen() {
                       onPress={() => handleDelete(supplement)}
                       style={[styles.actionButton, { backgroundColor: colors.background }]}
                       hitSlop={8}
+                      disabled={deletingId === supplement.id}
                     >
-                      <Ionicons name="trash-outline" size={18} color="#E57373" />
+                      {deletingId === supplement.id ? (
+                        <ActivityIndicator size="small" color="#E57373" />
+                      ) : (
+                        <Ionicons name="trash-outline" size={18} color="#E57373" />
+                      )}
                     </Pressable>
                   </View>
                 </View>
@@ -174,6 +188,7 @@ export default function SupplementsScreen() {
         supplement={editingSupplement}
         onSave={handleSave}
         onClose={() => setModalVisible(false)}
+        saving={saving}
       />
     </>
   );

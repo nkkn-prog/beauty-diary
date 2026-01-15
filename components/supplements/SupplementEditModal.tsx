@@ -8,6 +8,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -19,8 +20,9 @@ import { Supplement, EMOJI_PALETTE } from '@/types/treatment';
 type SupplementEditModalProps = {
   visible: boolean;
   supplement: Supplement | null;
-  onSave: (name: string, emoji: string, url?: string) => void;
+  onSave: (name: string, emoji: string, url?: string) => Promise<void>;
   onClose: () => void;
+  saving?: boolean;
 };
 
 export function SupplementEditModal({
@@ -28,6 +30,7 @@ export function SupplementEditModal({
   supplement,
   onSave,
   onClose,
+  saving,
 }: SupplementEditModalProps) {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
@@ -49,9 +52,9 @@ export function SupplementEditModal({
     }
   }, [supplement, visible]);
 
-  const handleSave = () => {
-    if (name.trim()) {
-      onSave(name.trim(), selectedEmoji, url.trim() || undefined);
+  const handleSave = async () => {
+    if (name.trim() && !saving) {
+      await onSave(name.trim(), selectedEmoji, url.trim() || undefined);
       onClose();
     }
   };
@@ -83,17 +86,21 @@ export function SupplementEditModal({
               </ThemedText>
               <Pressable
                 onPress={handleSave}
-                disabled={!name.trim()}
+                disabled={!name.trim() || saving}
                 hitSlop={8}
               >
-                <ThemedText
-                  style={[
-                    styles.headerButton,
-                    { color: name.trim() ? colors.accent : colors.textSecondary },
-                  ]}
-                >
-                  保存
-                </ThemedText>
+                {saving ? (
+                  <ActivityIndicator size="small" color={colors.accent} />
+                ) : (
+                  <ThemedText
+                    style={[
+                      styles.headerButton,
+                      { color: name.trim() ? colors.accent : colors.textSecondary },
+                    ]}
+                  >
+                    保存
+                  </ThemedText>
+                )}
               </Pressable>
             </View>
 

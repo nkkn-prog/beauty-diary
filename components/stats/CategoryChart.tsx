@@ -1,4 +1,5 @@
-import { StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { StyleSheet, View, Pressable } from 'react-native';
 import { PieChart } from 'react-native-gifted-charts';
 
 import { ThemedText } from '@/components/themed-text';
@@ -6,27 +7,93 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { CategoryStats } from '@/types/stats';
 
+type ViewMode = 'count' | 'expense';
+
 type Props = {
   data: CategoryStats[];
 };
 
+function formatCurrency(amount: number): string {
+  return `¥${amount.toLocaleString()}`;
+}
+
 export function CategoryChart({ data }: Props) {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
+  const [viewMode, setViewMode] = useState<ViewMode>('count');
 
   if (data.length === 0) {
     return null;
   }
 
-  const chartData = data.map((item) => ({
-    value: item.count,
-    color: item.color,
-    text: `${item.percentage}%`,
-  }));
+  const totalCount = data.reduce((sum, d) => sum + d.count, 0);
+  const totalExpense = data.reduce((sum, d) => sum + d.totalExpense, 0);
+
+  const chartData = data.map((item) => {
+    const value = viewMode === 'count' ? item.count : item.totalExpense;
+    const total = viewMode === 'count' ? totalCount : totalExpense;
+    const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+    return {
+      value,
+      color: item.color,
+      text: `${percentage}%`,
+    };
+  });
+
+  const legendData = data.map((item) => {
+    const value = viewMode === 'count' ? item.count : item.totalExpense;
+    const total = viewMode === 'count' ? totalCount : totalExpense;
+    const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+    return {
+      ...item,
+      displayValue: viewMode === 'count' ? `${item.count}回` : formatCurrency(item.totalExpense),
+      percentage,
+    };
+  }).sort((a, b) => {
+    const aValue = viewMode === 'count' ? a.count : a.totalExpense;
+    const bValue = viewMode === 'count' ? b.count : b.totalExpense;
+    return bValue - aValue;
+  });
 
   return (
     <View style={[styles.container, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-      <ThemedText style={styles.title}>カテゴリ別</ThemedText>
+      <View style={styles.header}>
+        <ThemedText style={styles.title}>カテゴリ別</ThemedText>
+        <View style={[styles.tabs, { backgroundColor: colors.background }]}>
+          <Pressable
+            style={[
+              styles.tab,
+              viewMode === 'count' && { backgroundColor: colors.accent },
+            ]}
+            onPress={() => setViewMode('count')}
+          >
+            <ThemedText
+              style={[
+                styles.tabText,
+                { color: viewMode === 'count' ? '#FFFFFF' : colors.textSecondary },
+              ]}
+            >
+              回数
+            </ThemedText>
+          </Pressable>
+          <Pressable
+            style={[
+              styles.tab,
+              viewMode === 'expense' && { backgroundColor: colors.accent },
+            ]}
+            onPress={() => setViewMode('expense')}
+          >
+            <ThemedText
+              style={[
+                styles.tabText,
+                { color: viewMode === 'expense' ? '#FFFFFF' : colors.textSecondary },
+              ]}
+            >
+              金額
+            </ThemedText>
+          </Pressable>
+        </View>
+      </View>
       <View style={styles.content}>
         <View style={styles.chartContainer}>
           <PieChart
@@ -37,23 +104,31 @@ export function CategoryChart({ data }: Props) {
             innerCircleColor={colors.surface}
             centerLabelComponent={() => (
               <View style={styles.centerLabel}>
-                <ThemedText style={styles.centerValue}>
-                  {data.reduce((sum, d) => sum + d.count, 0)}
-                </ThemedText>
-                <ThemedText style={[styles.centerText, { color: colors.textSecondary }]}>
-                  回
-                </ThemedText>
+                {viewMode === 'count' ? (
+                  <>
+                    <ThemedText style={styles.centerValue}>{totalCount}</ThemedText>
+                    <ThemedText style={[styles.centerText, { color: colors.textSecondary }]}>
+                      回
+                    </ThemedText>
+                  </>
+                ) : (
+                  <>
+                    <ThemedText style={[styles.centerValue, styles.centerValueSmall]}>
+                      {formatCurrency(totalExpense)}
+                    </ThemedText>
+                  </>
+                )}
               </View>
             )}
           />
         </View>
         <View style={styles.legend}>
-          {data.map((item) => (
+          {legendData.map((item) => (
             <View key={item.categoryId} style={styles.legendItem}>
               <View style={[styles.legendColor, { backgroundColor: item.color }]} />
               <ThemedText style={styles.legendLabel}>{item.label}</ThemedText>
               <ThemedText style={[styles.legendValue, { color: colors.textSecondary }]}>
-                {item.count}回 ({item.percentage}%)
+                {item.displayValue} ({item.percentage}%)
               </ThemedText>
             </View>
           ))}
@@ -70,10 +145,29 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: 16,
   },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   title: {
     fontSize: 15,
     fontWeight: '600',
-    marginBottom: 16,
+  },
+  tabs: {
+    flexDirection: 'row',
+    borderRadius: 8,
+    padding: 2,
+  },
+  tab: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  tabText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
   content: {
     flexDirection: 'row',
@@ -88,6 +182,9 @@ const styles = StyleSheet.create({
   centerValue: {
     fontSize: 20,
     fontWeight: '700',
+  },
+  centerValueSmall: {
+    fontSize: 14,
   },
   centerText: {
     fontSize: 11,

@@ -76,6 +76,7 @@ export default function EditTreatmentScreen() {
   const [notes, setNotes] = useState('');
   const [status, setStatus] = useState<TreatmentStatus>('scheduled');
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (treatmentsLoading || !id) return;
@@ -294,6 +295,7 @@ export default function EditTreatmentScreen() {
           onPress: async () => {
             if (!id) return;
             try {
+              setDeleting(true);
               // Google Calendarから削除（eventIdがある場合のみ）
               console.log('[Delete] Treatment data:', {
                 id: treatment?.id,
@@ -319,6 +321,8 @@ export default function EditTreatmentScreen() {
             } catch (error) {
               console.error('Failed to delete treatment:', error);
               Alert.alert('エラー', '削除に失敗しました');
+            } finally {
+              setDeleting(false);
             }
           },
         },
@@ -415,14 +419,18 @@ export default function EditTreatmentScreen() {
               disabled={!title.trim() || saving}
               hitSlop={8}
             >
-              <ThemedText
-                style={[
-                  styles.saveButton,
-                  { color: title.trim() && !saving ? colors.accent : colors.textSecondary },
-                ]}
-              >
-                保存
-              </ThemedText>
+              {saving ? (
+                <ActivityIndicator size="small" color={colors.accent} />
+              ) : (
+                <ThemedText
+                  style={[
+                    styles.saveButton,
+                    { color: title.trim() ? colors.accent : colors.textSecondary },
+                  ]}
+                >
+                  保存
+                </ThemedText>
+              )}
             </Pressable>
           ),
         }}
@@ -705,19 +713,29 @@ export default function EditTreatmentScreen() {
                 onPress={handleAddToCalendar}
                 disabled={isAdding}
               >
-                <Ionicons
-                  name="calendar-outline"
-                  size={20}
-                  color={isAdding ? colors.textSecondary : colors.accent}
-                />
-                <ThemedText
-                  style={[
-                    styles.calendarButtonText,
-                    { color: isAdding ? colors.textSecondary : colors.accent },
-                  ]}
-                >
-                  {isAdding ? '追加中...' : 'Google Calendarに追加'}
-                </ThemedText>
+                {isAdding ? (
+                  <>
+                    <ActivityIndicator size="small" color={colors.accent} />
+                    <ThemedText
+                      style={[styles.calendarButtonText, { color: colors.accent }]}
+                    >
+                      追加中...
+                    </ThemedText>
+                  </>
+                ) : (
+                  <>
+                    <Ionicons
+                      name="calendar-outline"
+                      size={20}
+                      color={colors.accent}
+                    />
+                    <ThemedText
+                      style={[styles.calendarButtonText, { color: colors.accent }]}
+                    >
+                      Google Calendarに追加
+                    </ThemedText>
+                  </>
+                )}
               </Pressable>
             </View>
 
@@ -726,11 +744,18 @@ export default function EditTreatmentScreen() {
               <Pressable
                 style={[styles.deleteButton, { borderColor: colors.error }]}
                 onPress={handleDelete}
+                disabled={deleting}
               >
-                <Ionicons name="trash-outline" size={20} color={colors.error} />
-                <ThemedText style={[styles.deleteButtonText, { color: colors.error }]}>
-                  この施術を削除
-                </ThemedText>
+                {deleting ? (
+                  <ActivityIndicator size="small" color={colors.error} />
+                ) : (
+                  <>
+                    <Ionicons name="trash-outline" size={20} color={colors.error} />
+                    <ThemedText style={[styles.deleteButtonText, { color: colors.error }]}>
+                      この施術を削除
+                    </ThemedText>
+                  </>
+                )}
               </Pressable>
             </View>
           </ScrollView>
