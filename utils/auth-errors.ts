@@ -86,6 +86,22 @@ const errorTranslations: Record<string, TranslatedError> = {
     hint: 'もう一度お試しください。問題が続く場合は、最初からやり直してください。',
   },
 
+  // OAuth関連
+  oauth_access_denied: {
+    title: 'サインインがキャンセルされました',
+    message: 'サインインがキャンセルされました。もう一度お試しください。',
+  },
+  oauth_account_already_connected: {
+    title: 'アカウントは既に連携されています',
+    message: 'このアカウントは既に別のユーザーに連携されています。',
+    hint: '別のアカウントでお試しいただくか、ログイン画面からサインインしてください。',
+  },
+  external_account_not_found: {
+    title: 'アカウントが見つかりません',
+    message: 'このアカウントは登録されていません。',
+    hint: '先に新規登録を行ってください。',
+  },
+
   // セッション関連
   session_exists: {
     title: '既にログインしています',

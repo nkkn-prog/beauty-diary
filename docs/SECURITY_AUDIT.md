@@ -1,8 +1,8 @@
-# BeautyDiary セキュリティ脆弱性調査結果
+# BeautyLog セキュリティ脆弱性調査結果
 
 **調査日:** 2026年1月15日
 **最終更新:** 2026年1月15日（修正実施後）
-**対象:** BeautyDiary React Native/Expo アプリケーション
+**対象:** BeautyLog React Native/Expo アプリケーション
 **調査範囲:** 認証・API通信・データ保存・入力検証・依存関係・外部連携
 
 ---
@@ -33,7 +33,7 @@ AsyncStorageはデフォルトで暗号化されず、プレーンテキスト�
 
 **リスク:**
 - デバイス盗難・紛失時に個人情報が流出
-- ルート化されたAndroid端末では `/data/data/com.nkkn.bilog/` から直接読み取り可能
+- ルート化されたAndroid端末では `/data/data/com.nkkn.beautylog/` から直接読み取り可能
 - 医療・美容に関する個人情報の漏洩
 
 **該当コード:**
@@ -164,7 +164,7 @@ OAuth認証後のリダイレクトURLの正当性確認が実装されていな
 
 **該当コード:**
 ```typescript
-redirectUrl: Linking.createURL('/(tabs)', { scheme: 'beautydiary' })
+redirectUrl: Linking.createURL('/(tabs)', { scheme: 'beautylog' })
 ```
 
 **推奨対策:**
@@ -200,18 +200,18 @@ if (__DEV__) {
 ### 7. URLスキームの衝突
 
 **影響ファイル:**
-- `app.json` (`scheme: "bilog"`)
-- `app/(auth)/sign-in.tsx` (`scheme: 'beautydiary'`)
+- `app.json` (`scheme: "beautylog"`)
+- `app/(auth)/sign-in.tsx` (`scheme: 'beautylog'`)
 
 **説明:**
-`bilog://`と`beautydiary://`の2つの異なるスキームが存在し、混乱を招く。
+`beautylog://`に統一済み。
 
 **リスク:**
 - スキーム衝突によるディープリンクの誤動作
 - 悪意あるアプリによるスキームハイジャック
 
 **推奨対策:**
-- スキームを`bilog://`に統一
+- スキームを`beautylog://`に統一
 
 ---
 
@@ -346,7 +346,7 @@ EASプロジェクトIDがapp.jsonにハードコードされている。
 | 4 | サプリメントURLバリデーション | http/https スキームのみ許可 | `utils/supplement-storage.ts` |
 | 5 | ディープリンク検証 | URLスキーム・パス検証ユーティリティ追加 | `utils/deep-link-validator.ts` |
 | 6 | デバッグログ本番出力 | `__DEV__`条件分岐追加 | `utils/google-calendar.ts`, `hooks/use-google-calendar.ts` |
-| 7 | URLスキーム衝突 | `bilog://`に統一 | `app/(auth)/sign-in.tsx` |
+| 7 | URLスキーム衝突 | `beautylog://`に統一 | `app/(auth)/sign-in.tsx` |
 | 8 | iOS権限の過剰要求 | `NSCalendarsFullAccessUsageDescription`削除 | `app.json` |
 | 9 | Webトークンキャッシュ | localStorage ベースの実装追加 | `utils/token-cache.ts` |
 | 10 | trim処理不一貫 | 入力値サニタイズ統一 | `utils/category-storage.ts`, `utils/supplement-storage.ts` |

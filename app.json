@@ -1,17 +1,18 @@
 {
   "expo": {
-    "name": "美ログ",
-    "slug": "bilog",
+    "name": "BeautyLog",
+    "slug": "beautylog",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "bilog",
+    "scheme": "beautylog",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.nkkn.bilog",
+      "bundleIdentifier": "com.nkkn.beautylog",
       "buildNumber": "1",
+      "usesAppleSignIn": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSPhotoLibraryUsageDescription": "施術の写真を保存するために使用します"
@@ -26,7 +27,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.nkkn.bilog"
+      "package": "com.nkkn.beautylog"
     },
     "web": {
       "output": "static",
@@ -46,7 +47,8 @@
           }
         }
       ],
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "expo-apple-authentication"
     ],
     "experiments": {
       "typedRoutes": true
@@ -54,8 +56,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "b389c9ae-3d9e-4952-8551-31e9da54708c"
+        "projectId": "0996a557-e9a2-4761-b968-0e65774174c3"
       }
-    }
+    },
+    "owner": "nkkn.prog"
   }
 }

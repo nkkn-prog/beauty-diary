@@ -1,8 +1,8 @@
-import { StyleSheet, View, Pressable, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, Pressable, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { useAuth, useUser } from '@clerk/clerk-expo';
+import { useClerk, useUser } from '@clerk/clerk-expo';
 import { useState } from 'react';
 
 import { ThemedText } from '@/components/themed-text';
@@ -36,7 +36,7 @@ export default function ProfileScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
   const router = useRouter();
-  const { signOut } = useAuth();
+  const { signOut } = useClerk();
   const { user } = useUser();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -63,10 +63,11 @@ export default function ProfileScreen() {
           onPress: async () => {
             setIsLoggingOut(true);
             try {
-              await signOut();
+              await signOut({ redirectUrl: '/(auth)/sign-in' });
+              router.replace('/(auth)/sign-in');
             } catch (error) {
               console.error('Logout failed:', error);
-              Alert.alert('エラー', 'ログアウトに失敗しました');
+              Alert.alert('エラー', 'ログアウトに失敗しました。もう一度お試しください。');
             } finally {
               setIsLoggingOut(false);
             }
@@ -129,10 +130,11 @@ export default function ProfileScreen() {
           <ThemedText style={[styles.sectionTitle, { color: colors.textSecondary }]}>
             アカウント
           </ThemedText>
-          <Pressable
+          <TouchableOpacity
             style={[styles.logoutButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
             onPress={handleLogout}
             disabled={isLoggingOut}
+            activeOpacity={0.6}
           >
             {isLoggingOut ? (
               <ActivityIndicator size="small" color={colors.error} />
@@ -146,7 +148,7 @@ export default function ProfileScreen() {
                 </ThemedText>
               </>
             )}
-          </Pressable>
+          </TouchableOpacity>
         </View>
 
         <View style={{ height: 40 }} />

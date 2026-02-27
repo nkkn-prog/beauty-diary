@@ -13,6 +13,7 @@ import {
   ScrollView,
 } from 'react-native';
 
+import { OAuthButtons } from '@/components/auth';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import {
@@ -331,6 +332,19 @@ export default function SignUpScreen() {
             )}
           </TouchableOpacity>
 
+          <View style={styles.divider}>
+            <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+            <Text style={[styles.dividerText, { color: colors.secondaryText }]}>または</Text>
+            <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+          </View>
+
+          <OAuthButtons
+            mode="sign-up"
+            disabled={loading}
+            onError={setError}
+            onClearErrors={clearErrors}
+          />
+
           <View style={styles.footer}>
             <Text style={[styles.footerText, { color: colors.secondaryText }]}>
               すでにアカウントをお持ちの方は
@@ -462,6 +476,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   backText: {
+    fontSize: 14,
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    marginHorizontal: 12,
     fontSize: 14,
   },
   footer: {

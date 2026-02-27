@@ -1,26 +1,22 @@
-import { useSignIn, useOAuth } from '@clerk/clerk-expo';
+import { useSignIn } from '@clerk/clerk-expo';
 import { Link, useRouter } from 'expo-router';
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import {
-  View,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator,
-  ScrollView,
-  Image,
+  View,
 } from 'react-native';
-import * as WebBrowser from 'expo-web-browser';
 
-WebBrowser.maybeCompleteAuthSession();
-
+import { OAuthButtons } from '@/components/auth';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { translateAuthError, validateEmail, validatePassword } from '@/utils/auth-errors';
-import { getOAuthRedirectUrl } from '@/utils/deep-link-validator';
 
 interface FormError {
   title: string;
@@ -30,7 +26,6 @@ interface FormError {
 
 export default function SignInScreen() {
   const { signIn, setActive, isLoaded } = useSignIn();
-  const { startOAuthFlow } = useOAuth({ strategy: 'oauth_google' });
   const router = useRouter();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
@@ -38,30 +33,8 @@ export default function SignInScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<FormError | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
-
-  const onGoogleSignIn = useCallback(async () => {
-    try {
-      setGoogleLoading(true);
-      clearErrors();
-
-      const { createdSessionId, setActive: setActiveSession } = await startOAuthFlow({
-        redirectUrl: getOAuthRedirectUrl(),
-      });
-
-      if (createdSessionId && setActiveSession) {
-        await setActiveSession({ session: createdSessionId });
-        router.replace('/(tabs)');
-      }
-    } catch (err: unknown) {
-      const translated = translateAuthError(err);
-      setError(translated);
-    } finally {
-      setGoogleLoading(false);
-    }
-  }, [startOAuthFlow, router]);
 
   const clearErrors = () => {
     setError(null);
@@ -129,7 +102,7 @@ export default function SignInScreen() {
     >
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <View style={styles.content}>
-          <Text style={[styles.title, { color: colors.text }]}>BeautyDiary</Text>
+          <Text style={[styles.title, { color: colors.text }]}>BeautyLog</Text>
           <Text style={[styles.subtitle, { color: colors.secondaryText }]}>
             アカウントにログイン
           </Text>
@@ -195,7 +168,7 @@ export default function SignInScreen() {
           <TouchableOpacity
             style={[styles.button, { backgroundColor: colors.primary }]}
             onPress={onSignIn}
-            disabled={loading || googleLoading}
+            disabled={loading}
           >
             {loading ? (
               <ActivityIndicator color="#fff" />
@@ -210,25 +183,12 @@ export default function SignInScreen() {
             <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
           </View>
 
-          <TouchableOpacity
-            style={[styles.googleButton, { borderColor: colors.border }]}
-            onPress={onGoogleSignIn}
-            disabled={loading || googleLoading}
-          >
-            {googleLoading ? (
-              <ActivityIndicator color={colors.text} />
-            ) : (
-              <>
-                <Image
-                  source={{ uri: 'https://www.google.com/favicon.ico' }}
-                  style={styles.googleIcon}
-                />
-                <Text style={[styles.googleButtonText, { color: colors.text }]}>
-                  Googleでログイン
-                </Text>
-              </>
-            )}
-          </TouchableOpacity>
+          <OAuthButtons
+            mode="sign-in"
+            disabled={loading}
+            onError={setError}
+            onClearErrors={clearErrors}
+          />
 
           <View style={styles.footer}>
             <Text style={[styles.footerText, { color: colors.secondaryText }]}>
@@ -341,22 +301,5 @@ const styles = StyleSheet.create({
   dividerText: {
     marginHorizontal: 12,
     fontSize: 14,
-  },
-  googleButton: {
-    height: 50,
-    borderRadius: 12,
-    borderWidth: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 8,
-  },
-  googleIcon: {
-    width: 20,
-    height: 20,
-  },
-  googleButtonText: {
-    fontSize: 16,
-    fontWeight: '500',
   },
 });

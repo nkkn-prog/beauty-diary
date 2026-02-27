@@ -4,7 +4,7 @@ import Constants from 'expo-constants';
 /**
  * アプリの許可されたURLスキーム
  */
-const ALLOWED_SCHEMES = ['bilog', 'exp'] as const;
+const ALLOWED_SCHEMES = ['beautylog', 'exp'] as const;
 
 /**
  * 許可されたリダイレクトパス
@@ -56,7 +56,7 @@ export function isValidDeepLink(url: string): boolean {
 export function createSafeRedirectUrl(path: string = '/(tabs)'): string {
   const configScheme = Constants.expoConfig?.scheme;
   // schemeが配列の場合は最初の要素を使用
-  const scheme = Array.isArray(configScheme) ? configScheme[0] : (configScheme || 'bilog');
+  const scheme = Array.isArray(configScheme) ? configScheme[0] : (configScheme || 'beautylog');
 
   // パスが許可リストにあるか確認
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
